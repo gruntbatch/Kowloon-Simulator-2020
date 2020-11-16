@@ -16,6 +16,10 @@ CFLAGS += -I$(SRC_DIR)
 
 LDFLAGS += -g
 
+LDFLAGS += -framework OpenGL
+CFLAGS += $(shell sdl2-config --cflags)
+LDFLAGS += $(shell sdl2-config --libs)
+
 .PHONY: exe
 exe: $(EXE_FILE)
 
@@ -31,3 +35,6 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 clean:
 	-$(RM) $(O_FILES)
 	-$(RM) $(EXE_FILE)
+
+run: exe
+	$(EXE_FILE)
