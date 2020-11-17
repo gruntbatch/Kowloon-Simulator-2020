@@ -2,21 +2,29 @@
 #include "SDL_plus.h"
 #include "SDL_opengl.h"
 
-static int init_sdl(void) {
-    return SDL_Init(SDL_INIT_VIDEO);
+enum Continue {
+    STOP,
+    GO,
+};
+
+static enum Continue init_sdl(void) {
+    if (SDL_Init(SDL_INIT_VIDEO) != SDL_OK) {
+	return STOP;
+    }
+    return GO;
 }
 
 static void quit_sdl(void) {
     SDL_Quit();
 }
 
-static int set_gl_attributes(void) {
-    return 0;
+static enum Continue set_gl_attributes(void) {
+    return GO;
 }
 
 static SDL_Window* window;
 
-static int open_window(void) {
+static enum Continue open_window(void) {
     window = SDL_CreateWindow("a.out",
 			      SDL_WINDOWPOS_CENTERED,
 			      SDL_WINDOWPOS_CENTERED,
@@ -25,12 +33,12 @@ static int open_window(void) {
 			      SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
 
     if (!window) {
-	return 1;
+	return STOP;
     }
 
     /* SDL_SetRelativeMouseMode(SDL_TRUE); */
 
-    return 0;
+    return GO;
 }
 
 static void close_window(void) {
@@ -41,17 +49,17 @@ static void close_window(void) {
 
 static SDL_GLContext context;
 
-static int create_gl_context(void) {
+static enum Continue create_gl_context(void) {
     context = SDL_GL_CreateContext(window);
 
     if (!context) {
-	return 1;
+	return STOP;
     }
 
     glViewport(0, 0, 1280, 720);
     glClearColor(1.0, 0.0, 0.0, 1.0);
 
-    return 0;
+    return GO;
 }
 
 static void delete_gl_context(void) {
@@ -87,7 +95,7 @@ static void poll_events(void) {
     }
 }
 
-static int loop(void) {
+static enum Continue loop(void) {
     double delta_time = 1.0 / 30.0; /* TODO Replace with a constant */
 
     double time = 0.0;
@@ -122,10 +130,10 @@ static int loop(void) {
 	SDL_GL_SwapWindow(window);
     }
     
-    return 1;
-}
+    return STOP;
+}   
 
-typedef int (*Up)(void);
+typedef enum Continue (*Up)(void);
 typedef void (*Down)(void);
 
 struct Rung {
@@ -142,7 +150,7 @@ int main(int argc, char* argv[]) {
     struct Rung* rung = ladder;
 
     for (;;) {
-	if (rung->up && rung->up() == 0) {
+	if (rung->up && rung->up() == GO) {
 	    rung++;
 	} else {
 	    break;

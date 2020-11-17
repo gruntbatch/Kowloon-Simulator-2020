@@ -4,7 +4,7 @@
 #include <SDL.h>
 
 
-#define SDK_OK 0
+#define SDL_OK 0
 
 
 double SDL_GetPerformanceTime(void);
