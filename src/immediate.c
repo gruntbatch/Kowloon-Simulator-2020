@@ -8,14 +8,17 @@
 #include <string.h>
 
 
-const struct UniformBuffer MATRICES = { .name="Matrices",
-                                        .size=3 * sizeof(union Matrix4),
-                                        .bind=0 };
+struct UniformBuffer MATRICES = { .name="Matrices",
+                                  .size=3 * sizeof(union Matrix4),
+                                  .bind=0,
+				  .id=0 };
 
 
 void imInitTransformBuffer(void) {
+    glLogErrors();
+
     /* TODO Since this can fail, should it return a Maybe? */
-    glGenBuffers(1, (GLuint *)&MATRICES.id);
+    glGenBuffers(1, &MATRICES.id);
 
     glBindBuffer(GL_UNIFORM_BUFFER, MATRICES.id); {
         glBufferData(GL_UNIFORM_BUFFER,
