@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "SDL.h"
+#include "SDL_plus.h"
 #include "SDL_opengl.h"
 
 static int init_sdl(void) {
@@ -28,7 +28,7 @@ static int open_window(void) {
 	return 1;
     }
 
-    SDL_SetRelativeMouseMode(SDL_TRUE);
+    /* SDL_SetRelativeMouseMode(SDL_TRUE); */
 
     return 0;
 }
@@ -60,12 +60,68 @@ static void delete_gl_context(void) {
     }
 }
 
-static int loop(void) {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    SDL_GL_SwapWindow(window);
+static SDL_bool RUN;
+
+static void poll_events(void) {
     SDL_Event e;
-    SDL_PollEvent(&e);
-    SDL_Delay(5000);
+    while (SDL_PollEvent(&e)) {
+	switch (e.type) {
+	case SDL_QUIT:
+	    RUN = SDL_FALSE;
+	    break;
+	case SDL_KEYDOWN:
+	    if (e.key.repeat) {
+		/* pass */
+	    } else {
+		switch (e.key.keysym.sym) {
+		case SDLK_ESCAPE:
+		    RUN = SDL_FALSE;
+		    break;
+		default:
+		    break;
+		}
+	    }
+	default:
+	    break;
+	}
+    }
+}
+
+static int loop(void) {
+    double delta_time = 1.0 / 30.0; /* TODO Replace with a constant */
+
+    double time = 0.0;
+    double accumulator = 0.0;
+
+    double current_time = SDL_GetPerformanceTime();
+    double initial_time = current_time;
+
+    RUN = SDL_TRUE;
+    while (RUN) {
+	double new_time = SDL_GetPerformanceTime();
+	double frame_time = new_time - current_time;
+	if (frame_time > 0.25) {
+	    frame_time = 0.25;
+	}
+	current_time = new_time;
+	accumulator += frame_time;
+
+	while (accumulator >= delta_time) {
+	    /* TODO Call fixed update functions */
+
+	    time += delta_time;
+	    accumulator -= delta_time;
+	}
+
+	double alpha = accumulator / delta_time;
+
+	/* Call update functions */
+	poll_events();
+	
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	SDL_GL_SwapWindow(window);
+    }
+    
     return 1;
 }
 
