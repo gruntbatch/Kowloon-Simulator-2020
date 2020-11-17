@@ -1,40 +1,37 @@
+#
+# Top level declarations
+#
+# Any declarations common to multiple makefiles should go here.
 BIN_DIR = bin
 BUILD_DIR = build
-SRC_DIR = src
-EXE_FILE = $(BIN_DIR)/a.out
+# TODO Declare DEBUG here
 
-C_FILES = $(shell find $(SRC_DIR) -name "*.c")
-O_FILES = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(C_FILES))
 
-CFLAGS += -std=c11
-CFLAGS += -Wall -Wmissing-declarations -Wmissing-prototypes -Wpedantic
-CFLAGS += -Werror
-CFLAGS += -Wno-extra-semi
-CFLAGS += -Wno-error=unused-variable -Wno-error=unused-function
-CFLAGS += -g3
-CFLAGS += -I$(SRC_DIR)
+#
+# Include other makefiles
+#
+# Seperating makefiles by concern is nice, but can result in variable
+# name collisions or other bugs. The best defense is to be mindful
+# while editing makefiles.
 
-LDFLAGS += -g
+# The executable makefile provides `executable` and `clean_executable`
+# as targets, and `EXECUTABLE_FILE` as a variable
+include executable.mk
 
-LDFLAGS += -framework OpenGL
-CFLAGS += $(shell sdl2-config --cflags)
-LDFLAGS += $(shell sdl2-config --libs)
+# The asset makefile provides `assets` as a target and `ASSET_FILES`
+# as a variable
+include assets.mk
 
-.PHONY: exe
-exe: $(EXE_FILE)
 
-$(EXE_FILE): $(O_FILES)
-	mkdir -p $(@D)
-	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
-
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
-	mkdir -p $(@D)
-	$(CC) $(CFLAGS) -c $< -o $@
+#
+# Targets
+#
+.PHONY: all
+all: exe assets
 
 .PHONY: clean
-clean:
-	-$(RM) $(O_FILES)
-	-$(RM) $(EXE_FILE)
+clean: clean_exe clean_assets
 
-run: exe
+.PHONY: run
+run: all
 	$(EXE_FILE)
