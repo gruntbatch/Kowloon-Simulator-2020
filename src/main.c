@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include "logger.h"
 #include "SDL_plus.h"
 #include "SDL_opengl.h"
 
@@ -7,8 +7,16 @@ enum Continue {
     GO,
 };
 
+static enum Continue log_verbosely(void) {
+    /* TODO Should this be in `logger.h`? */
+    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
+
+    return GO;
+}
+
 static enum Continue init_sdl(void) {
     if (SDL_Init(SDL_INIT_VIDEO) != SDL_OK) {
+	Error("Unable to initialize SDL because %s\n", SDL_GetError());
 	return STOP;
     }
     return GO;
@@ -19,6 +27,16 @@ static void quit_sdl(void) {
 }
 
 static enum Continue set_gl_attributes(void) {
+    /* Specify OpenGL version */
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+			SDL_GL_CONTEXT_PROFILE_CORE);
+
+    /* Set buffer attributes */
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
     return GO;
 }
 
@@ -33,6 +51,7 @@ static enum Continue open_window(void) {
 			      SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
 
     if (!window) {
+	Error("Unable to open a window because %s\n", SDL_GetError());
 	return STOP;
     }
 
@@ -53,6 +72,8 @@ static enum Continue create_gl_context(void) {
     context = SDL_GL_CreateContext(window);
 
     if (!context) {
+	Error("Unable to create an OpenGL context because %s\n",
+	      SDL_GetError());
 	return STOP;
     }
 
@@ -142,7 +163,8 @@ struct Rung {
 };
 
 int main(int argc, char* argv[]) {
-    struct Rung ladder[] = {{ .up=init_sdl, .down=quit_sdl },
+    struct Rung ladder[] = {{ .up=log_verbosely },
+			    { .up=init_sdl, .down=quit_sdl },
 			    { .up=set_gl_attributes },
 			    { .up=open_window, .down=close_window },
 			    { .up=create_gl_context, .down=delete_gl_context },
@@ -164,5 +186,5 @@ int main(int argc, char* argv[]) {
 	rung--;
     }
 
-    return 0;
+    return GetErrorStatus();
 }
