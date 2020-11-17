@@ -1,3 +1,4 @@
+#include "immediate.h"
 #include "logger.h"
 #include "SDL_plus.h"
 #include "SDL_opengl.h"
@@ -86,6 +87,8 @@ static enum Continue create_gl_context(void) {
 	return STOP;
     }
 
+    glEnable(GL_DEPTH_TEST);
+
     glViewport(0, 0, 1280, 720);
     glClearColor(1.0, 0.0, 0.0, 1.0);
 
@@ -96,6 +99,13 @@ static void delete_gl_context(void) {
     if (context) {
 	SDL_GL_DeleteContext(context);
     }
+}
+
+static enum Continue create_renderer(void) {
+    imInitTransformBuffer();
+    imInitInternalVertexArray();
+
+    return GO;
 }
 
 static SDL_bool RUN;
@@ -126,6 +136,16 @@ static void poll_events(void) {
 }
 
 static enum Continue loop(void) {
+    GLuint program = LoadProgram(LoadShader(GL_VERTEX_SHADER,
+					    FromBase("assets/shaders/world_space.vert")),
+				 LoadShader(GL_FRAGMENT_SHADER,
+					    FromBase("assets/shaders/vertex_color.frag")));
+
+    /* Initialize matrices */
+    imModel(Matrix4(1));
+    imView(Matrix4(1));
+    imProjection(Orthographic(0, 1280, 0, 720, -1, 1));
+
     double delta_time = 1.0 / 30.0; /* TODO Replace with a constant */
 
     double time = 0.0;
@@ -157,6 +177,21 @@ static enum Continue loop(void) {
 	poll_events();
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	imBindVertexArray();
+	imUseProgram(program);
+	imBegin(GL_TRIANGLES); {
+	    imColor3ub(255, 0, 0);
+	    imVertex2f(0, 0);
+
+	    imColor3ub(0, 255, 0);
+	    imVertex2f(640, 720);
+
+	    imColor3ub(0, 0, 255);
+	    imVertex2f(1280, 0);
+	} imEnd();
+	imFlush();
+
 	SDL_GL_SwapWindow(window);
     }
     
@@ -178,6 +213,7 @@ int main(int argc, char* argv[]) {
 			    { .up=set_gl_attributes },
 			    { .up=open_window, .down=close_window },
 			    { .up=create_gl_context, .down=delete_gl_context },
+			    { .up=create_renderer },
 			    { .up=loop }};
     struct Rung* rung = ladder;
 
