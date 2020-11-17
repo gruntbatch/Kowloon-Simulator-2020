@@ -8,8 +8,16 @@ enum Continue {
 };
 
 static enum Continue log_verbosely(void) {
-    /* TODO Should this be in `logger.h`? */
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
+
+    return GO;
+}
+
+static enum Continue remember_filepaths(void) {
+    if (RememberBasePath() != SDL_OK) {
+	Error("Unable to remember the base path because %s\n", SDL_GetError());
+	return STOP;
+    }
 
     return GO;
 }
@@ -19,6 +27,7 @@ static enum Continue init_sdl(void) {
 	Error("Unable to initialize SDL because %s\n", SDL_GetError());
 	return STOP;
     }
+    
     return GO;
 }
 
@@ -122,12 +131,12 @@ static enum Continue loop(void) {
     double time = 0.0;
     double accumulator = 0.0;
 
-    double current_time = SDL_GetPerformanceTime();
+    double current_time = GetPerformanceTime();
     double initial_time = current_time;
 
     RUN = SDL_TRUE;
     while (RUN) {
-	double new_time = SDL_GetPerformanceTime();
+	double new_time = GetPerformanceTime();
 	double frame_time = new_time - current_time;
 	if (frame_time > 0.25) {
 	    frame_time = 0.25;
@@ -164,6 +173,7 @@ struct Rung {
 
 int main(int argc, char* argv[]) {
     struct Rung ladder[] = {{ .up=log_verbosely },
+			    { .up=remember_filepaths },
 			    { .up=init_sdl, .down=quit_sdl },
 			    { .up=set_gl_attributes },
 			    { .up=open_window, .down=close_window },
