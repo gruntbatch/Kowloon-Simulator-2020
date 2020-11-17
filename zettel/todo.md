@@ -5,7 +5,7 @@ TODO
   - ~~Poll for input~~
   - ~~Quit on command~~
   - ~~Render a triangle~~
-  - Render meshes
+  - ~~Render meshes~~
   - Generate terrain
   - Place trees
   - Player controls

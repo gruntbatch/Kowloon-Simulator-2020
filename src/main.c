@@ -1,7 +1,7 @@
 #include "immediate.h"
 #include "logger.h"
+#include "retained.h"
 #include "SDL_plus.h"
-#include "SDL_opengl.h"
 
 enum Continue {
     STOP,
@@ -92,6 +92,8 @@ static enum Continue create_gl_context(void) {
     glViewport(0, 0, 1280, 720);
     glClearColor(1.0, 0.0, 0.0, 1.0);
 
+    glLogErrors();
+
     return GO;
 }
 
@@ -141,6 +143,11 @@ static enum Continue loop(void) {
 				 LoadShader(GL_FRAGMENT_SHADER,
 					    FromBase("assets/shaders/vertex_color.frag")));
 
+    GLuint64 vertex_array = rtGenVertexArray();
+    rtBindVertexArray(vertex_array);
+    GLuint64 mesh_id = rtLoadMesh(FromBase("assets/models/Floor13.anio"));
+    rtFillBuffer();
+
     /* Initialize matrices */
     imModel(Matrix4(1));
     imView(Matrix4(1));
@@ -178,6 +185,10 @@ static enum Continue loop(void) {
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	imModel(Matrix4(1));
+	imView(Matrix4(1));
+	imProjection(Orthographic(0, 1280, 0, 720, -1, 1));
+
 	imBindVertexArray();
 	imUseProgram(program);
 	imBegin(GL_TRIANGLES); {
@@ -191,6 +202,16 @@ static enum Continue loop(void) {
 	    imVertex2f(1280, 0);
 	} imEnd();
 	imFlush();
+
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	imModel(Matrix4(1));
+	imView(LookAt(Vector3(10, 10, 10), Vector3(0, 0, 0), Vector3(0, 0, 1)));
+	imProjection(Perspective(90, 1280.0 / 720.0, 0.1, 100.0));
+
+	rtBindVertexArray(vertex_array);
+	rtDrawArrays(GL_TRIANGLES, mesh_id);
+	rtFlush();
 
 	SDL_GL_SwapWindow(window);
     }

@@ -307,6 +307,44 @@ void imFlush(void) {
 }
 
 
+GLuint64 rtLoadMesh(const char * filepath) {
+    char * source = fopenstr(filepath);
+
+    if (!source) {
+	Warn("Unable to open mesh file. Does %s exist?\n", filepath);
+	return 0;
+    }
+
+    rtBegin(); {
+	char * line = source;
+	while (line) {
+	    char * endline = strchr(line, '\n');
+	    if (endline) {
+		*endline = '\0';
+
+		union Vector3 position, normal;
+
+		if (sscanf(line,
+			   "%*i %f,%f,%f %f,%f,%f",
+			   &position.x, &position.y, &position.z,
+			   &normal.x, &normal.y, &normal.z) == 6) {
+		    imNormal3(normal);
+		    imVertex3(position);
+		}
+
+		line = endline + 1;
+	    } else {
+		line = NULL;
+	    }
+	}
+    } GLuint64 id = rtEnd();
+
+    free(source);
+
+    return id;
+}
+
+
 GLuint64 rtGenVertexArray(void) {
     GLuint vertex_array, vertex_buffer;
     glGenVertexArrays(1, &vertex_array);
