@@ -509,7 +509,7 @@ GLuint LoadShader(GLenum type, const char * filepath) {
     char * source = fopenstr(filepath);
     
     if (!source) {
-        Error("Unable to open shader source file. Does %s exist?\n",
+        Err("Unable to open shader source file. Does %s exist?\n",
                filepath);
         return 0;
     }

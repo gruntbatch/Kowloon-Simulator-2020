@@ -2,8 +2,8 @@
 
 
 void Log(const char * fmt, ...);
-void Warning(const char * fmt, ...);
-void Error(const char * fmt, ...);
+void Warn(const char * fmt, ...);
+void Err(const char * fmt, ...);
 
 
-int GetErrorStatus(void);
+int ErrorCount(void);

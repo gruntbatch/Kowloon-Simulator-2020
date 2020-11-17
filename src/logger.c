@@ -18,7 +18,7 @@ void Log(const char * fmt, ...) {
 }
 
 
-void Warning(const char * fmt, ...) {
+void Warn(const char * fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     logv(SDL_LOG_PRIORITY_WARN, fmt, ap);
@@ -26,11 +26,11 @@ void Warning(const char * fmt, ...) {
 }
 
 
-static int status = 0;
+static int error_count = 0;
 
 
-void Error(const char * fmt, ...) {
-    status = 1;
+void Err(const char * fmt, ...) {
+    error_count += 1;
     va_list ap;
     va_start(ap, fmt);
     logv(SDL_LOG_PRIORITY_CRITICAL, fmt, ap);
@@ -38,6 +38,6 @@ void Error(const char * fmt, ...) {
 }
 
 
-int GetErrorStatus(void) {
-    return status;
+int ErrorCount(void) {
+    return error_count;
 }

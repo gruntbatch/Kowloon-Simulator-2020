@@ -16,7 +16,7 @@ static enum Continue log_verbosely(void) {
 
 static enum Continue remember_filepaths(void) {
     if (RememberBasePath() != SDL_OK) {
-	Error("Unable to remember the base path because %s\n", SDL_GetError());
+	Err("Unable to remember the base path because %s\n", SDL_GetError());
 	return STOP;
     }
 
@@ -25,7 +25,7 @@ static enum Continue remember_filepaths(void) {
 
 static enum Continue init_sdl(void) {
     if (SDL_Init(SDL_INIT_VIDEO) != SDL_OK) {
-	Error("Unable to initialize SDL because %s\n", SDL_GetError());
+	Err("Unable to initialize SDL because %s\n", SDL_GetError());
 	return STOP;
     }
     
@@ -61,7 +61,7 @@ static enum Continue open_window(void) {
 			      SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
 
     if (!window) {
-	Error("Unable to open a window because %s\n", SDL_GetError());
+	Err("Unable to open a window because %s\n", SDL_GetError());
 	return STOP;
     }
 
@@ -82,8 +82,8 @@ static enum Continue create_gl_context(void) {
     context = SDL_GL_CreateContext(window);
 
     if (!context) {
-	Error("Unable to create an OpenGL context because %s\n",
-	      SDL_GetError());
+	Err("Unable to create an OpenGL context because %s\n",
+	    SDL_GetError());
 	return STOP;
     }
 
@@ -232,5 +232,5 @@ int main(int argc, char* argv[]) {
 	rung--;
     }
 
-    return GetErrorStatus();
+    return ErrorCount();
 }
