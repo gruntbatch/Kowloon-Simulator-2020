@@ -2,7 +2,6 @@
 # Executable
 #
 EXE_FILE = $(BIN_DIR)/a.out
-SRC_DIR = src
 
 
 #
@@ -11,8 +10,8 @@ SRC_DIR = src
 # Use the shell's find program to find all of our source files.  This
 # should work in any Unix-like environment, but might not work in
 # Windows.
+SRC_DIR = src
 C_FILES = $(shell find $(SRC_DIR) -name "*.c")
-
 
 
 #
@@ -53,7 +52,7 @@ endif
 
 
 #
-# Executable
+# Rules
 #
 .PHONY: exe
 exe: $(EXE_FILE)
@@ -68,9 +67,6 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-#
-# Clean Executable
-#
 .PHONY: clean_exe
 clean_exe:
 	-$(RM) $(O_FILES)
