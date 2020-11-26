@@ -1,3 +1,4 @@
+#include "events.h"
 #include "immediate.h"
 #include "logger.h"
 #include "retained.h"
@@ -110,33 +111,6 @@ static enum Continue create_renderer(void) {
     return GO;
 }
 
-static SDL_bool RUN;
-
-static void poll_events(void) {
-    SDL_Event e;
-    while (SDL_PollEvent(&e)) {
-	switch (e.type) {
-	case SDL_QUIT:
-	    RUN = SDL_FALSE;
-	    break;
-	case SDL_KEYDOWN:
-	    if (e.key.repeat) {
-		/* pass */
-	    } else {
-		switch (e.key.keysym.sym) {
-		case SDLK_ESCAPE:
-		    RUN = SDL_FALSE;
-		    break;
-		default:
-		    break;
-		}
-	    }
-	default:
-	    break;
-	}
-    }
-}
-
 static enum Continue loop(void) {
     GLuint program = LoadProgram(LoadShader(GL_VERTEX_SHADER,
 					    FromBase("assets/shaders/world_space.vert")),
@@ -161,8 +135,7 @@ static enum Continue loop(void) {
     double current_time = GetPerformanceTime();
     double initial_time = current_time;
 
-    RUN = SDL_TRUE;
-    while (RUN) {
+    while (!HasQuit()) {
 	double new_time = GetPerformanceTime();
 	double frame_time = new_time - current_time;
 	if (frame_time > 0.25) {
@@ -181,7 +154,7 @@ static enum Continue loop(void) {
 	double alpha = accumulator / delta_time;
 
 	/* Call update functions */
-	poll_events();
+	PollEvents();
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
