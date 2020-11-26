@@ -1,7 +1,8 @@
 #
 # Executable
 #
-EXE_FILE = $(BIN_DIR)/a.out
+# TODO Rename based on platform
+EXE_FILE = $(BIN_DIR)/Cyberpunk1977
 
 
 #
