@@ -114,6 +114,8 @@ struct Framebuffer {
 /* TODO Pick internal resolution based on user's resolution */
 static struct Framebuffer internal = { { .x=320, .y=240 } };
 
+static GLuint draw_buffer_program;
+
 static enum Continue create_renderer(void) {
     glGenTextures(2, &internal.color);
     glGenFramebuffers(1, &internal.buffer);
@@ -162,6 +164,11 @@ static enum Continue create_renderer(void) {
             return STOP;
         }
     } glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    draw_buffer_program = LoadProgram(LoadShader(GL_VERTEX_SHADER,
+						 FromBase("assets/shaders/world_space.vert")),
+				      LoadShader(GL_FRAGMENT_SHADER,
+						 FromBase("assets/shaders/draw_buffer.frag")));
     
     imInitTransformBuffer();
     imInitInternalVertexArray();
@@ -214,23 +221,30 @@ static enum Continue loop(void) {
 	/* Call update functions */
 	PollEvents();
 	
+	/* Draw to internal framebuffer */
+	glBindFramebuffer(GL_FRAMEBUFFER, internal.buffer);
+	glViewport(0, 0, internal.resolution.x, internal.resolution.y);
+	    
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	imModel(Matrix4(1));
 	imView(Matrix4(1));
-	imProjection(Orthographic(0, 1280, 0, 720, -1, 1));
+	imProjection(Orthographic(0, internal.resolution.x,
+				  0, internal.resolution.y,
+				  -1, 1));
+
+	imUseProgram(program);
 
 	imBindVertexArray();
-	imUseProgram(program);
 	imBegin(GL_TRIANGLES); {
 	    imColor3ub(255, 0, 0);
 	    imVertex2f(0, 0);
 
 	    imColor3ub(0, 255, 0);
-	    imVertex2f(640, 720);
+	    imVertex2f(internal.resolution.x / 2.0, internal.resolution.y);
 
 	    imColor3ub(0, 0, 255);
-	    imVertex2f(1280, 0);
+	    imVertex2f(internal.resolution.x, 0);
 	} imEnd();
 	imFlush();
 
@@ -238,11 +252,46 @@ static enum Continue loop(void) {
 
 	imModel(Matrix4(1));
 	imView(LookAt(Vector3(10, 10, 10), Vector3(0, 0, 0), Vector3(0, 0, 1)));
+	/* TODO Use internal resolution to calculate aspect ratio */
 	imProjection(Perspective(90, 1280.0 / 720.0, 0.1, 100.0));
 
 	rtBindVertexArray(vertex_array);
 	rtDrawArrays(GL_TRIANGLES, mesh_id);
 	rtFlush();
+
+	/* Draw to default framebuffer */
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0, 0, 1280, 720);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	imModel(Matrix4(1));
+	imView(Matrix4(1));
+	imProjection(Orthographic(0, 1, 0, 1, -1, 1));
+
+	imUseProgram(draw_buffer_program);
+	imBindTexture(GL_TEXTURE_2D, internal.color);
+
+	imBindVertexArray();
+	imBegin(GL_TRIANGLE_STRIP); {
+	    imColor3ub(0, 0, 0);
+	    imTexCoord2f(0, 0);
+	    imVertex2f(0, 0);
+
+	    imColor3ub(255, 0, 0);
+	    imTexCoord2f(1, 0);
+	    imVertex2f(1, 0);
+
+	    imColor3ub(0, 255, 0);
+	    imTexCoord2f(0, 1);
+	    imVertex2f(0, 1);
+
+	    imColor3ub(0, 0, 255);
+	    imTexCoord2f(1, 1);
+	    imVertex2f(1, 1);
+	} imEnd();
+	imFlush();
+	glLogErrors();
 
 	SDL_GL_SwapWindow(window);
     }
