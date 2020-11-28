@@ -1,4 +1,5 @@
 #include "events.h"
+#include "logger.h"
 
 
 static SDL_bool has_quit = SDL_FALSE;
@@ -26,38 +27,43 @@ void PollEvents(void) {
 		    has_quit = SDL_TRUE;
 		    break;
                 case SDLK_w:
-                    move.y -= 1;
-                    break;
-                case SDLK_s:
                     move.y += 1;
                     break;
+                case SDLK_s:
+                    move.y -= 1;
+                    break;
                 case SDLK_a:
-                    move.x += 1;
+                    move.x -= 1;
                     break;
                 case SDLK_d:
-                    move.x -= 1;
+                    move.x += 1;
                     break;
 		default:
 		    break;
 		}
 	    }
+	    break;
         case SDL_KEYUP:
-            switch (e.key.keysym.sym) {
-            case SDLK_w:
-                move.y += 1;
-                break;
-            case SDLK_s:
-                move.y -= 1;
-                break;
-            case SDLK_a:
-                move.x -= 1;
-                break;
-            case SDLK_d:
-                move.x += 1;
-                break;
-            default:
-                break;
-            }
+	    if (e.key.repeat) {
+		/* pass */
+	    } else {
+		switch (e.key.keysym.sym) {
+		case SDLK_w:
+		    move.y -= 1;
+		    break;
+		case SDLK_s:
+		    move.y += 1;
+		    break;
+		case SDLK_a:
+		    move.x += 1;
+		    break;
+		case SDLK_d:
+		    move.x -= 1;
+		    break;
+		default:
+		    break;
+		}
+	    }
             break;
         case SDL_MOUSEMOTION:
             look = Vector2(e.motion.xrel, e.motion.yrel);
