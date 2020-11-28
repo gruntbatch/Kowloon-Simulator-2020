@@ -16,6 +16,7 @@ union Vector2 Add2(union Vector2 l, union Vector2 r);
 union Vector2 DirectionFrom2(union Vector2 here, union Vector2 there);
 f32 Distance2(union Vector2 l, union Vector2 r);
 f32 DistanceSquared2(union Vector2 l, union Vector2 r);
+f32 Dot2(union Vector2 l, union Vector2 r);
 bool Equal2(union Vector2 l, union Vector2 r);
 f32 Magnitude2(union Vector2 v);
 f32 MagnitudeSquared2(union Vector2 v);

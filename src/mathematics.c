@@ -33,6 +33,11 @@ f32 DistanceSquared2(union Vector2 l, union Vector2 r) {
 }
 
 
+f32 Dot2(union Vector2 l, union Vector2 r) {
+    return l.x * r.x + l.y * r.y;
+}
+
+
 bool Equal2(union Vector2 l, union Vector2 r) {
     return (l.x == r.x && l.y == r.y);
 }
