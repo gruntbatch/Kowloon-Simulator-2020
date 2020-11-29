@@ -7,9 +7,18 @@
 
 
 struct Triangle {
-    union Vector2 p0, p1, p2;
-    int n0, n1, n2;
-    int t0, t1, t2;
+    union {
+	struct { union Vector2 p0, p1, p2; };
+	union Vector2 p[3];
+    };
+    union {
+	struct { int n0, n1, n2; };
+	int n[3];
+    };
+    union {
+	struct { int t0, t1, t2; };
+	int t[3];
+    };
 };
 
 
@@ -20,7 +29,6 @@ struct Transition {
 };
 
 
-// TODO Move to barycentric coordinates
 static union Vector2 to_barycentric(union Vector2 p, struct Triangle t) {
     union Vector2 ab, ac, ap;
     ab = Sub2(t.p1, t.p0);
@@ -37,7 +45,7 @@ static union Vector2 to_barycentric(union Vector2 p, struct Triangle t) {
 
     float u = (d11 * d20 - d01 * d21) * d;
     float v = (d00 * d21 - d01 * d20) * d;
-    /* float u = 1.0f - v - w; */
+    /* float w = 1.0f - u - v; */
 
     return Vector2(u, v);
 }
@@ -55,7 +63,7 @@ static union Vector2 from_barycentric(union Vector2 p, struct Triangle t) {
 
 static float sign(union Vector2 p, union Vector2 a, union Vector2 b)
 {
-     return (p.x - a.x) * (b.y - a.y) - (b.x - a.x) * (p.y - a.y);
+     return (p.x - b.x) * (a.y - b.y) - (a.x - b.x) * (p.y - b.y);
 }
 
 
@@ -127,21 +135,25 @@ Navmesh CreateTestNavmesh(void) {
     navmesh->triangle_count = 4;
     navmesh->triangles[0] = (struct Triangle) {
 	.p0={ .x=-1, .y=-1 }, .p1={ .x=1, .y=-1 }, .p2={ .x=1, .y=0 },
-	.n0=-1, .n1=-1, .n2=1,
+	.n0=3, .n1=-1, .n2=1,
+	.t0=1, .t1=-1, .t2=-1
     };
     navmesh->triangles[1] = (struct Triangle) {
 	.p0={ .x=-1, .y=-1 }, .p1={ .x=1, .y=0 }, .p2={ .x=-1, .y=0 },
 	.n0=0, .n1=2, .n2=-1,
+	.t0=-1, .t1=-1, .t2=-1
     };
     navmesh->triangles[2] = (struct Triangle) {
 	.p0={ .x=-1, .y=0 }, .p1={ .x=1, .y=0 }, .p2={ .x=1, .y=1 },
 	.n0=1, .n1=-1, .n2=3,
+	.t0=-1, .t1=-1, .t2=-1
     };
     navmesh->triangles[3] = (struct Triangle) {
 	.p0={ .x=-1, .y=0 }, .p1={ .x=1, .y=1 }, .p2={ .x=-1, .y=1 },
-	.n0=2, .n1=-1, .n2=-1,
+	.n0=2, .n1=0, .n2=-1,
+	.t0=-1, .t1=0, .t2=-1
     };
-
+    
     navmesh->transition_count = 2;
     navmesh->transitions[0] = (struct Transition) { 1, { .x=0, .y=1 }, { .x=1.5, .y=0.5 } };
     navmesh->transitions[1] = (struct Transition) { 0, { .x=0, .y=-1 }, { .x=1.5, .y=0.5 } };
@@ -155,8 +167,6 @@ struct Agent {
     int triangle;
     union Vector2 position;
     union Vector2 velocity;
-    union Vector2 bary_position;
-    union Vector2 bary_velocity;
 };
 
 
@@ -181,93 +191,55 @@ Agent CreateAgent(Navmesh navmesh_id) {
 void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
     struct Agent* agent = &agents[id];
 
-    /* Apply input to velocity */
-    union Vector2 velocity = agent->velocity;
-    velocity = Add2(velocity, goal);
-    if (Magnitude2(velocity) >= 1) {
-	velocity = Normalize2(velocity);
+    agent->velocity = Add2(agent->velocity, goal);
+    if (Magnitude2(agent->velocity) >= 1) {
+	agent->velocity = Normalize2(agent->velocity);
     }
-    
-    /* Convert velocity to barycentric coordinates */
+    agent->position = Add2(Scale2(agent->velocity, delta_time), agent->position);
+    agent->velocity = Scale2(agent->velocity, 0.7);
+
     struct Navmesh navmesh = navmeshes[agent->navmesh];
     struct Triangle triangle = navmesh.triangles[agent->triangle];
 
-    agent->bary_velocity = local_to_barycentric(velocity, triangle);
-    /* agent->velocity = from_barycentric(agent->bary_velocity, triangle); */
-    /* Log("V %f BV %f\n", agent->velocity, agent->bary_velocity); */
-
-    /* Apply velocity to barymetric position */
-    agent->bary_position = Add2(Scale2(agent->bary_velocity, delta_time), agent->bary_position);
-
-    /* Convert barycentric position to world coordinates */
-    agent->position = from_barycentric(agent->bary_position, triangle);
-
-    int inside = inside_barycentric_triangle(agent->bary_position);
-    if (inside) {
-	imColor3ub(200, 200, 200);
-    } else {
-	imColor3ub(200, 0, 0);
-    }
-    imBegin(GL_LINES); {
-	imVertex2(triangle.p0);
-	imVertex2(agent->position);
-    } imEnd();
-    
-    /* Adjust barycentric position */
-    /* Detect collisions */
-    /* Convert barycentric position to world coordinates */
-    
-
-    /* agent->velocity = Add2(agent->velocity, goal); */
-    /* if (Magnitude2(agent->velocity) >= 1) { */
-    /* 	agent->velocity = Normalize2(agent->velocity); */
-    /* } */
-    /* agent->position = Add2(Scale2(agent->velocity, delta_time), agent->position); */
-    agent->velocity = Scale2(velocity, 0.7);
-
-    #if 0
-    struct Navmesh navmesh = navmeshes[agent->navmesh];
-    struct Triangle triangle = navmesh.triangles[agent->triangle];
-
-    float d0, d1, d2;
-    d0 = sign(agent->position, triangle.p0, triangle.p1);
-    d1 = sign(agent->position, triangle.p1, triangle.p2);
-    d2 = sign(agent->position, triangle.p2, triangle.p0);
-
-    union Vector2 a, b;
-    int edge = -1;
     int next = -1;
     int tran = -1;
+    union Vector2 a, b;
 
-    if (d0 < 0) {
-	a = triangle.p0; b = triangle.p1;
-	edge = 0;
-	next = triangle.n0;
-	tran = triangle.t0;
-    } else if (d1 < 0) {
-	a = triangle.p1; b = triangle.p2;
-	edge = 1;
-	next = triangle.n1;
-	tran = triangle.t1;
-    } else if (d2 < 0) {
-	a = triangle.p2; b = triangle.p0;
-	edge = 2;
-	next = triangle.n2;
-	tran = triangle.t2;
-    } else {
-	return;
+    struct {
+	GLubyte r, g, b;
+    } colors[3] = {
+	{ 255, 0, 0 },
+	{ 0, 255, 0 },
+	{ 0, 0, 255 },
+    };
+
+    for (int i=0; i<3 /* aww */; i++) {
+	a = triangle.p[i];
+	b = triangle.p[(i + 1) % 3];
+	float s = sign(agent->position, a, b);
+	if (0 <= s) {
+	    continue;
+	}
+	
+	next = triangle.n[i];
+	tran = triangle.t[i];
+	if (next != -1) {
+	    break;
+	}
+	
+	union Vector2 nearest;
+	float dist = distance_to_line(agent->position, a, b, &nearest);
+	// TODO don't simply set this, but properly bounce/slide along walls and effect velocity
+	agent->position = nearest;
+	imColor3ub(255, 0, 0);
+	imBegin(GL_LINES); {
+	    imVertex2(agent->position);
+	    imVertex2(nearest);
+	} imEnd();
     }
 
-    union Vector2 nearest;
-    float dist = distance_to_line(agent->position, a, b, &nearest);
-
-    imColor3ub(200, 200, 200);
-    imBegin(GL_LINES); {
-	imVertex2(nearest);
-	imVertex2(agent->position);
-    } imEnd();
-
     if (next < 0) {
+	/* agent->position = nearest; */
 	
     } else {
 	/* printf("TRIDEX %d\n", next); */
@@ -281,7 +253,6 @@ void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
 	}
 	agent->triangle = next;
     }
-    #endif
 }
 
 
