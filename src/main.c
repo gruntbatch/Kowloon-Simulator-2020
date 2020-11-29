@@ -259,11 +259,13 @@ static enum Continue loop(void) {
 	/* TODO Use internal resolution to calculate aspect ratio */
 	imProjection(Perspective(90, 1280.0 / 720.0, 0.1, 100.0));
 
-	MoveAgent(agent, GetMove(), delta_time);
-
+	
 	glDisable(GL_DEPTH_TEST);
 	imBindVertexArray();
 	imDrawNavmesh(navmesh);
+
+	MoveAgent(agent, GetMove(), delta_time);
+
 	imDrawAgent(agent, 0.1);
 	imFlush();
 	glEnable(GL_DEPTH_TEST);
