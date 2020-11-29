@@ -11,7 +11,7 @@ Navmesh CreateTestNavmesh(void);
 
 typedef u32 Agent;
 Agent CreateAgent(Navmesh navmesh);
-void MoveAgent(Agent agent, union Vector2 input, float delta_time);
+void MoveAgent(Agent agent, union Vector2 goal, float delta_time);
 
 
 void imDrawNavmesh(Navmesh navmesh);

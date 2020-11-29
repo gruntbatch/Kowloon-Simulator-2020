@@ -21,6 +21,38 @@ struct Transition {
 
 
 // TODO Move to barycentric coordinates
+static union Vector2 to_barycentric(union Vector2 p, struct Triangle t) {
+    union Vector2 ab, ac, ap;
+    ab = Sub2(t.p1, t.p0);
+    ac = Sub2(t.p2, t.p0);
+    ap = Sub2(p, t.p0);
+
+    float d00 = Dot2(ab, ab);
+    float d01 = Dot2(ab, ac);
+    float d11 = Dot2(ac, ac);
+    float d20 = Dot2(ap, ab);
+    float d21 = Dot2(ap, ac);
+
+    float d = 1.0 / (d00 * d11 - d01 * d01);
+
+    float u = (d11 * d20 - d01 * d21) * d;
+    float v = (d00 * d21 - d01 * d20) * d;
+    /* float u = 1.0f - v - w; */
+
+    return Vector2(u, v);
+}
+
+static union Vector2 local_to_barycentric(union Vector2 p, struct Triangle t) {
+    return to_barycentric(Add2(p, t.p0), t);
+}
+
+static union Vector2 from_barycentric(union Vector2 p, struct Triangle t) {
+    union Vector2 ab, ac;
+    ab = Sub2(t.p1, t.p0);
+    ac = Sub2(t.p2, t.p0);
+    return Add2(Add2(Scale2(ab, p.u), Scale2(ac, p.v)), t.p0);
+}
+
 static float sign(union Vector2 p, union Vector2 a, union Vector2 b)
 {
      return (p.x - a.x) * (b.y - a.y) - (b.x - a.x) * (p.y - a.y);
@@ -61,16 +93,13 @@ static float signed_distance_to_line(union Vector2 p, union Vector2 a, union Vec
 
 
 static int inside_triangle(union Vector2 pos, struct Triangle tri) {
-    float d0, d1, d2;
-    d0 = sign(pos, tri.p0, tri.p1);
-    d1 = sign(pos, tri.p1, tri.p2);
-    d2 = sign(pos, tri.p2, tri.p0);
+    union Vector2 uv = to_barycentric(pos, tri);
+    return (0 <= uv.u && 0 <= uv.v && uv.u + uv.v <= 1);
+}
 
-    int posi, negi;
-    negi = (d0 < 0) || (d1 < 0) || (d2 < 0);
-    posi = (d0 > 0) || (d1 > 0) || (d2 > 0);
 
-    return !(negi && posi);
+static int inside_barycentric_triangle(union Vector2 uv) {
+    return (0 <= uv.u && 0 <= uv.v && uv.u + uv.v <= 1);
 }
 
 
@@ -97,29 +126,25 @@ Navmesh CreateTestNavmesh(void) {
 
     navmesh->triangle_count = 4;
     navmesh->triangles[0] = (struct Triangle) {
-	.p0={ .x=0, .y=-1 }, .p1={ .x=-1, .y=-1 }, .p2={ .x=-1, .y=0 },
-	.n0=3, .n1=-1, .n2=1,
-	.t0=1, .t1=-1, .t2=-1
+	.p0={ .x=-1, .y=-1 }, .p1={ .x=1, .y=-1 }, .p2={ .x=1, .y=0 },
+	.n0=-1, .n1=-1, .n2=1,
     };
     navmesh->triangles[1] = (struct Triangle) {
-	.p0={ .x=0, .y=-1 }, .p1={ .x=-1, .y=0 }, .p2={ .x=0, .y=0 },
+	.p0={ .x=-1, .y=-1 }, .p1={ .x=1, .y=0 }, .p2={ .x=-1, .y=0 },
 	.n0=0, .n1=2, .n2=-1,
-	.t0=-1, .t1=-1, .t2=-1
     };
     navmesh->triangles[2] = (struct Triangle) {
-	.p0={ .x=-1, .y=0 }, .p1={ .x=0, .y=1 }, .p2={ .x=0, .y=0 },
-	.n0=3, .n1=-1, .n2=1,
-	.t0=-1, .t1=-1, .t2=-1
+	.p0={ .x=-1, .y=0 }, .p1={ .x=1, .y=0 }, .p2={ .x=1, .y=1 },
+	.n0=1, .n1=-1, .n2=3,
     };
     navmesh->triangles[3] = (struct Triangle) {
-	.p0={ .x=-1, .y=0 }, .p1={ .x=-1, .y=1 }, .p2={ .x=0, .y=1 },
-	.n0=-1, .n1=0, .n2=2,
-	.t0=-1, .t1=0, .t2=-1
+	.p0={ .x=-1, .y=0 }, .p1={ .x=1, .y=1 }, .p2={ .x=-1, .y=1 },
+	.n0=2, .n1=-1, .n2=-1,
     };
 
     navmesh->transition_count = 2;
-    navmesh->transitions[0] = (struct Transition) { 1, { .x=-0.5, .y=1 }, { .x=1, .y=0.5 } };
-    navmesh->transitions[1] = (struct Transition) { 0, { .x=-0.5, .y=-1 }, { .x=1, .y=0.5 } };
+    navmesh->transitions[0] = (struct Transition) { 1, { .x=0, .y=1 }, { .x=1.5, .y=0.5 } };
+    navmesh->transitions[1] = (struct Transition) { 0, { .x=0, .y=-1 }, { .x=1.5, .y=0.5 } };
 
     return id;
 }
@@ -130,6 +155,8 @@ struct Agent {
     int triangle;
     union Vector2 position;
     union Vector2 velocity;
+    union Vector2 bary_position;
+    union Vector2 bary_velocity;
 };
 
 
@@ -151,16 +178,54 @@ Agent CreateAgent(Navmesh navmesh_id) {
 }
 
 
-void MoveAgent(Agent id, union Vector2 input, float delta_time) {
+void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
     struct Agent* agent = &agents[id];
 
-    agent->velocity = Add2(agent->velocity, input);
-    if (Magnitude2(agent->velocity) >= 1) {
-	agent->velocity = Normalize2(agent->velocity);
+    /* Apply input to velocity */
+    union Vector2 velocity = agent->velocity;
+    velocity = Add2(velocity, goal);
+    if (Magnitude2(velocity) >= 1) {
+	velocity = Normalize2(velocity);
     }
-    agent->position = Add2(Scale2(agent->velocity, delta_time), agent->position);
-    agent->velocity = Scale2(agent->velocity, 0.7);
     
+    /* Convert velocity to barycentric coordinates */
+    struct Navmesh navmesh = navmeshes[agent->navmesh];
+    struct Triangle triangle = navmesh.triangles[agent->triangle];
+
+    agent->bary_velocity = local_to_barycentric(velocity, triangle);
+    /* agent->velocity = from_barycentric(agent->bary_velocity, triangle); */
+    /* Log("V %f BV %f\n", agent->velocity, agent->bary_velocity); */
+
+    /* Apply velocity to barymetric position */
+    agent->bary_position = Add2(Scale2(agent->bary_velocity, delta_time), agent->bary_position);
+
+    /* Convert barycentric position to world coordinates */
+    agent->position = from_barycentric(agent->bary_position, triangle);
+
+    int inside = inside_barycentric_triangle(agent->bary_position);
+    if (inside) {
+	imColor3ub(200, 200, 200);
+    } else {
+	imColor3ub(200, 0, 0);
+    }
+    imBegin(GL_LINES); {
+	imVertex2(triangle.p0);
+	imVertex2(agent->position);
+    } imEnd();
+    
+    /* Adjust barycentric position */
+    /* Detect collisions */
+    /* Convert barycentric position to world coordinates */
+    
+
+    /* agent->velocity = Add2(agent->velocity, goal); */
+    /* if (Magnitude2(agent->velocity) >= 1) { */
+    /* 	agent->velocity = Normalize2(agent->velocity); */
+    /* } */
+    /* agent->position = Add2(Scale2(agent->velocity, delta_time), agent->position); */
+    agent->velocity = Scale2(velocity, 0.7);
+
+    #if 0
     struct Navmesh navmesh = navmeshes[agent->navmesh];
     struct Triangle triangle = navmesh.triangles[agent->triangle];
 
@@ -216,6 +281,7 @@ void MoveAgent(Agent id, union Vector2 input, float delta_time) {
 	}
 	agent->triangle = next;
     }
+    #endif
 }
 
 
