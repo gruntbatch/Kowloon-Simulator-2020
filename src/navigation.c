@@ -3,7 +3,8 @@
 
 #include "immediate.h"
 #include "logger.h"
-#include "stdlib.h"
+#include <math.h>
+#include "stdlib_plus.h"
 
 
 struct Triangle {
@@ -27,6 +28,87 @@ struct Transition {
     union Vector2 position;
     union Vector2 size;
 };
+
+
+static void draw_line(union Vector2 a, union Vector2 b) {
+    imBegin(GL_LINES); {
+	imVertex2(a);
+	imVertex2(b);
+    } imEnd();
+}
+
+#if 0
+// The line to collide to, made from two points
+line = lineEnd - lineStart;
+// The line normal
+normal = normalize(line.y, -line.x);
+// The closest distance to the line from the origin (0, 0), is in the direction of the normal
+d = dot(normal, lineStart);
+// Check the distance from the line to the player start position
+startDist = dot(normal, playerStart) - d;
+// If the distance is negative, that means the player is 'behind' the line
+// To correctly use the normal, if that is the case, invert the normal
+if(startDist < 0.0f) { normal = -normal; d = -d;}
+// Check the distance from the line to the player end position
+// (using corrected normal if necessary, so playerStart is always in front of the line now)
+endDist = dot(normal, playerEnd) - d;
+// Check if playerEnd is behind the line
+if (endDist < 0.0f) {
+    // Here a collision has occured
+    // Calculate the new position by moving playerEnd out to the line in the direction of the normal,
+    // and a little bit further to counteract floating point inaccuracies
+    actualEnd = playerEnd + normal * (-endDist + eps);
+    // eps should be something less than a visible pixel, so it's not noticeable
+}
+#endif
+
+
+static union Vector2 line_line(union Vector2 a, union Vector2 b, union Vector2 u, union Vector2 v) {
+    // TODO This is magic to me
+    #if 0
+    // Line AB represented as a1x + b1y = c1 
+    double a1 = B.second - A.second; 
+    double b1 = A.first - B.first; 
+    double c1 = a1*(A.first) + b1*(A.second); 
+  
+    // Line CD represented as a2x + b2y = c2 
+    double a2 = D.second - C.second; 
+    double b2 = C.first - D.first; 
+    double c2 = a2*(C.first)+ b2*(C.second); 
+  
+    double determinant = a1*b2 - a2*b1; 
+  
+    if (determinant == 0) 
+    { 
+        // The lines are parallel. This is simplified 
+        // by returning a pair of FLT_MAX 
+        return make_pair(FLT_MAX, FLT_MAX); 
+    } 
+    else
+    { 
+        double x = (b2*c1 - b1*c2)/determinant; 
+        double y = (a1*c2 - a2*c1)/determinant; 
+        return make_pair(x, y); 
+    }
+    #endif
+    float a1 = b.y - a.y;
+    float b1 = a.x - b.x;
+
+    float a2 = v.y - u.y;
+    float b2 = u.x - v.x;
+
+    float d = a1 * b2 - a2 * b1;
+
+    if (d == 0) {
+	return Vector2(INFINITY, INFINITY);
+    } else {
+	float c1 = a1 * (a.x) + b1 * (a.y);
+	float c2 = a2 * (u.x) + b2 * (u.y);
+	float x = (b2 * c1 - b1 * c2) / d;
+	float y = (a1 * c2 - a2 * c1) / d;
+	return Vector2(x, y);
+    }
+}
 
 
 static union Vector2 to_barycentric(union Vector2 p, struct Triangle t) {
@@ -167,6 +249,8 @@ struct Agent {
     int triangle;
     union Vector2 position;
     union Vector2 velocity;
+    float mass;
+    union Vector2 acceleration;
 };
 
 
@@ -184,26 +268,16 @@ Agent CreateAgent(Navmesh navmesh_id) {
     struct Triangle t = navmesh.triangles[agent->triangle];
     agent->position = Scale2(Add2(t.p0, Add2(t.p1, t.p2)), 1.0 / 3.0);
     agent->velocity = Vector2(0, 0);
+    agent->mass = 1.0f;
+    agent->acceleration = Vector2(0, 0);
     return id;
 }
 
 
 void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
     struct Agent* agent = &agents[id];
-
-    agent->velocity = Add2(agent->velocity, goal);
-    if (Magnitude2(agent->velocity) >= 1) {
-	agent->velocity = Normalize2(agent->velocity);
-    }
-    agent->position = Add2(Scale2(agent->velocity, delta_time), agent->position);
-    agent->velocity = Scale2(agent->velocity, 0.7);
-
     struct Navmesh navmesh = navmeshes[agent->navmesh];
     struct Triangle triangle = navmesh.triangles[agent->triangle];
-
-    int next = -1;
-    int tran = -1;
-    union Vector2 a, b;
 
     struct {
 	GLubyte r, g, b;
@@ -213,46 +287,61 @@ void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
 	{ 0, 0, 255 },
     };
 
-    for (int i=0; i<3 /* aww */; i++) {
-	a = triangle.p[i];
-	b = triangle.p[(i + 1) % 3];
-	float s = sign(agent->position, a, b);
-	if (0 <= s) {
-	    continue;
+    union Vector2 force = Vector2(0, 0);
+
+    /* Movement towards the goal */
+    force = Add2(force, Scale2(Normalize2(goal), 13));
+
+    /* Friction */
+    force = Add2(force, Scale2(Negate2(Normalize2(agent->velocity)), Magnitude2(agent->velocity) * 7));
+
+    /* Collision */
+    int j;
+    for (j=0; j<16; j++) {
+	union Vector2 acceleration = Scale2(force, 1.0 / agent->mass);
+	union Vector2 velocity = Add2(agent->velocity, Scale2(acceleration, delta_time));
+	union Vector2 position = Add2(agent->position, Scale2(velocity, delta_time));
+
+	struct {
+	    float distance;
+	    union Vector2 a, b;
+	    int edge;
+	} hit = { .distance=INFINITY };
+
+	for (int i=0; i<3; i++) {
+	    union Vector2 a, b;
+	    a = triangle.p[i];
+	    b = triangle.p[(i + 1) % 3];
+
+	    float s = sign(position, a, b);
+	    if (s <= 0) {
+		union Vector2 point = line_line(agent->position, position, a, b);
+		float distance = DistanceSquared2(agent->position, point);
+		if (distance <= hit.distance) {
+		    hit.distance = distance;
+		    hit.a = a;
+		    hit.b = b;
+		    hit.edge = i;
+		}
+	    }
 	}
-	
-	next = triangle.n[i];
-	tran = triangle.t[i];
-	if (next != -1) {
+
+	if (hit.edge != -1) {
+	    imColor3ub(255, 0, 0);
+	    draw_line(hit.a, hit.b);
+	    
+	    union Vector2 normal = Normalize2(Vector2(-(hit.b.y - hit.a.y), hit.b.x - hit.a.x));
+	    float distance = distance_to_line(position, hit.a, hit.b, NULL);
+	    force = Add2(force, Scale2(normal, (distance + 0.001) * 66));
+	} else {
 	    break;
 	}
-	
-	union Vector2 nearest;
-	float dist = distance_to_line(agent->position, a, b, &nearest);
-	// TODO don't simply set this, but properly bounce/slide along walls and effect velocity
-	agent->position = nearest;
-	imColor3ub(255, 0, 0);
-	imBegin(GL_LINES); {
-	    imVertex2(agent->position);
-	    imVertex2(nearest);
-	} imEnd();
     }
 
-    if (next < 0) {
-	/* agent->position = nearest; */
-	
-    } else {
-	/* printf("TRIDEX %d\n", next); */
-	if (tran < 0) {
-
-	} else {
-	    struct Transition t = navmesh.transitions[tran];
-	    struct Transition target = navmesh.transitions[t.target];
-	    union Vector2 offset = Sub2(t.position, target.position);
-	    agent->position = Sub2(agent->position, offset);
-	}
-	agent->triangle = next;
-    }
+    /* I'm not sure this works right for objects with masses other than 1.0 */
+    agent->acceleration = Scale2(force, 1.0 / agent->mass);
+    agent->velocity = Add2(agent->velocity, Scale2(agent->acceleration, delta_time));
+    agent->position = Add2(agent->position, Scale2(agent->velocity, delta_time));
 }
 
 
@@ -290,12 +379,12 @@ void imDrawAgent(Agent id, float radius) {
     struct Navmesh navmesh = navmeshes[agent.navmesh];
     struct Triangle triangle = navmesh.triangles[agent.triangle];
 
-    imColor3ub(255, 255, 0);
-    imBegin(GL_LINE_LOOP); {
-	imVertex2(triangle.p0);
-	imVertex2(triangle.p1);
-	imVertex2(triangle.p2);
-    } imEnd();
+    /* imColor3ub(255, 255, 0); */
+    /* imBegin(GL_LINE_LOOP); { */
+    /* 	imVertex2(triangle.p0); */
+    /* 	imVertex2(triangle.p1); */
+    /* 	imVertex2(triangle.p2); */
+    /* } imEnd(); */
 
     if (inside_triangle(agent.position, triangle)) {
 	imColor3ub(0, 255, 255);
