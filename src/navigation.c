@@ -298,17 +298,17 @@ void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
     /* Collision */
     int j;
     for (j=0; j<16; j++) {
+	struct {
+	    float distance;
+	    int i;
+	    union Vector2 a, b;
+	} hit = { .distance=INFINITY, .i=-1 };
+
 	union Vector2 acceleration = Scale2(force, 1.0 / agent->mass);
 	union Vector2 velocity = Add2(agent->velocity, Scale2(acceleration, delta_time));
 	union Vector2 position = Add2(agent->position, Scale2(velocity, delta_time));
 
-	struct {
-	    float distance;
-	    union Vector2 a, b;
-	    int edge;
-	} hit = { .distance=INFINITY };
-
-	for (int i=0; i<3; i++) {
+	for (int i=0; i<3 /* ilyt */; i++) {
 	    union Vector2 a, b;
 	    a = triangle.p[i];
 	    b = triangle.p[(i + 1) % 3];
@@ -321,18 +321,32 @@ void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
 		    hit.distance = distance;
 		    hit.a = a;
 		    hit.b = b;
-		    hit.edge = i;
+		    hit.i = i;
 		}
 	    }
 	}
 
-	if (hit.edge != -1) {
-	    imColor3ub(255, 0, 0);
-	    draw_line(hit.a, hit.b);
-	    
-	    union Vector2 normal = Normalize2(Vector2(-(hit.b.y - hit.a.y), hit.b.x - hit.a.x));
-	    float distance = distance_to_line(position, hit.a, hit.b, NULL);
-	    force = Add2(force, Scale2(normal, (distance + 0.001) * 66));
+	if (hit.i != -1) {
+	    /* Transition */
+	    int n = triangle.n[hit.i];
+	    if (n != -1) {
+		int t = triangle.t[hit.i];
+		if (t != -1) {
+		    struct Transition transition = navmesh.transitions[t];
+		    struct Transition next_transition = navmesh.transitions[transition.target];
+		    union Vector2 offset = Sub2(transition.position, next_transition.position);
+		    agent->position = Sub2(agent->position, offset);
+		}
+
+		agent->triangle = n;
+		triangle = navmesh.triangles[n];
+	    } else {
+
+		/* Collision */
+		union Vector2 normal = Normalize2(Vector2(-(hit.b.y - hit.a.y), hit.b.x - hit.a.x));
+		float distance = distance_to_line(position, hit.a, hit.b, NULL);
+		force = Add2(force, Scale2(normal, (distance + 0.01) * 66));
+	    }
 	} else {
 	    break;
 	}
