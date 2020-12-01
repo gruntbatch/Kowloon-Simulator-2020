@@ -26,6 +26,26 @@ union Vector2 Scale2(union Vector2 v, f32 scalar);
 union Vector2 Sub2(union Vector2 l, union Vector2 r);
 
 
+struct Line2 {
+    union Vector2 a, b;
+};
+
+
+struct Line2 Line2(union Vector2 a, union Vector2 b);
+union Vector2 Intersect2(struct Line2 l, struct Line2 r);
+float DistanceToLine2(union Vector2 p, struct Line2 l);
+float Sign2(union Vector2 p, struct Line2 l);
+
+
+union Triangle2 {
+    struct { union Vector2 a, b, c; };
+    union Vector2 p[3];
+};
+
+
+int InsideTriangle2(union Vector2 p, union Triangle2 t);
+
+
 union Vector3 {
     struct { f32 x, y, z; };
     struct { f32 r, g, b; };

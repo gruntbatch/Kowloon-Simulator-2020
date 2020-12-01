@@ -83,6 +83,105 @@ union Vector2 Sub2(union Vector2 l, union Vector2 r) {
 }
 
 
+struct Line2 Line2(union Vector2 a, union Vector2 b) {
+    return (struct Line2) { .a=a, .b=b };
+}
+
+
+union Vector2 Intersect2(struct Line2 l, struct Line2 r) {
+    union Vector2 a = l.a;
+    union Vector2 b = l.b;
+    
+    // TODO This is magic to me
+    float a1 = b.y - a.y;
+    float b1 = a.x - b.x;
+
+    float a2 = b.y - a.y;
+    float b2 = a.x - b.x;
+
+    float d = a1 * b2 - a2 * b1;
+
+    if (d == 0) {
+	return Vector2(INFINITY, INFINITY);
+    } else {
+	float c1 = a1 * (a.x) + b1 * (a.y);
+	float c2 = a2 * (a.x) + b2 * (a.y);
+	float x = (b2 * c1 - b1 * c2) / d;
+	float y = (a1 * c2 - a2 * c1) / d;
+	return Vector2(x, y);
+    }
+}
+
+
+float DistanceToLine2(union Vector2 p, struct Line2 l) {
+    /* Adapted from https://stackoverflow.com/a/1501725 */
+    // Return minimum distance between line segment ab and point p
+    union Vector2 a = l.a;
+    union Vector2 b = l.b;
+    union Vector2 nearest;
+    float dist;
+
+    float mag2 = DistanceSquared2(a, b); // i.e. |w-v|^2 -  avoid a sqrt
+    if (mag2 == 0.0) {
+	nearest = a;
+	dist = Distance2(p, a);
+    } else {
+	// Consider the line extending the segment, parameterized as v + t (w - v).
+	// We find projection of point p onto the line. 
+	// It falls where t = [(p-v) . (w-v)] / |w-v|^2
+	// We clamp t from [0,1] to handle points outside the segment vw.
+	float t = fmaxf(0, fminf(1, Dot2(Sub2(p, a), Sub2(b, a)) / mag2));
+	nearest = Add2(a, Scale2(Sub2(b, a), t)); // Nearest falls on the segment
+	dist = Distance2(p, nearest);
+    }
+
+    return dist;    
+}
+
+
+float Sign2(union Vector2 p, struct Line2 l) {
+    union Vector2 a = l.a;
+    union Vector2 b = l.b;
+    return (p.x - b.x) * (a.y - b.y) - (a.x - b.x) * (p.y - b.y);
+}
+
+
+static union Vector2 to_barycentric(union Vector2 p, union Triangle2 t) {
+    union Vector2 ab, ac, ap;
+    ab = Sub2(t.b, t.a);
+    ac = Sub2(t.c, t.a);
+    ap = Sub2(p, t.a);
+
+    float d00 = Dot2(ab, ab);
+    float d01 = Dot2(ab, ac);
+    float d11 = Dot2(ac, ac);
+    float d20 = Dot2(ap, ab);
+    float d21 = Dot2(ap, ac);
+
+    float d = 1.0 / (d00 * d11 - d01 * d01);
+
+    float u = (d11 * d20 - d01 * d21) * d;
+    float v = (d00 * d21 - d01 * d20) * d;
+    /* float w = 1.0f - u - v; */
+
+    return Vector2(u, v);
+}
+
+
+static union Vector2 from_barycentric(union Vector2 p, union Triangle2 t) {
+    union Vector2 ab, ac;
+    ab = Sub2(t.b, t.a);
+    ac = Sub2(t.c, t.a);
+    return Add2(Add2(Scale2(ab, p.u), Scale2(ac, p.v)), t.a);
+}
+
+
+int InsideTriangle2(union Vector2 p, union Triangle2 t) {
+    union Vector2 uv = to_barycentric(p, t);
+    return (0 <= uv.u && 0 <= uv.v && uv.u + uv.v <= 1);
+}
+
+
 union Vector3 Vector3(f32 x, f32 y, f32 z) {
     return (union Vector3) { .x=x, .y=y, .z=z };
 }
