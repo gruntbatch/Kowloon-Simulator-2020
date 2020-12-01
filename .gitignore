@@ -4,6 +4,7 @@
 
 *.pyc
 
+assets/areas/
 bin/
 build/
 

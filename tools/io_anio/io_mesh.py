@@ -27,6 +27,7 @@ def gather_vertices(mesh):
     bm = bmesh.new()
     bm.from_mesh(mesh)
     bmesh.ops.triangulate(bm, faces=bm.faces)
+    # TODO don't do this
     bm.to_mesh(mesh)
     bm.free()
 
