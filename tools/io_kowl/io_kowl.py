@@ -2,6 +2,7 @@ import bmesh
 import bpy
 import bpy_extras
 from collections import deque
+import mathutils
 import pprint
 
 
@@ -91,21 +92,21 @@ def tokenize(children):
 def structure_areas(areas):
     for area in areas:
         # Navmesh
-        area["navmesh"] = structure_navmesh(area["navmesh"].data)
+        area["navmesh"] = structure_navmesh(area["navmesh"])
 
         # Portals
 
 
-def structure_navmesh(me):
+def structure_navmesh(obj):
     bm = bmesh.new()
-    bm.from_mesh(me)
+    bm.from_mesh(obj.data)
     bmesh.ops.triangulate(bm, faces=bm.faces)
+    bmesh.ops.transform(bm, matrix=obj.matrix_world, verts=bm.verts)
 
     triangles = dict()
 
     for face in bm.faces:
         triangle = triangles.setdefault(face.index, list())
-        # triangle = dict()
 
         if len(face.loops) != 3:
             raise Exception("Triangulation failed")
