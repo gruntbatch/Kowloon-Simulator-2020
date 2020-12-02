@@ -105,6 +105,9 @@ def structure_navmesh(obj):
 
     triangles = dict()
 
+    if len(bm.faces) > 64:
+        raise Exception("{} has more than 64 triangles".format(obj.name))
+
     for face in bm.faces:
         triangle = triangles.setdefault(face.index, list())
 
