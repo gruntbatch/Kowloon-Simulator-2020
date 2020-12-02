@@ -182,8 +182,9 @@ static enum Continue loop(void) {
 					    FromBase("assets/shaders/world_space.vert")),
 				 LoadShader(GL_FRAGMENT_SHADER,
 					    FromBase("assets/shaders/vertex_color.frag")));
+    Navmesh navmesh = LoadNavmesh("assets/areas/grotto");
 
-    Navmesh navmesh = CreateTestNavmesh();
+    /* Navmesh navmesh = CreateTestNavmesh(); */
     Agent agent = CreateAgent(navmesh);
 
     /* GLuint64 vertex_array = rtGenVertexArray(); */
@@ -255,7 +256,7 @@ static enum Continue loop(void) {
 	glClear(GL_DEPTH_BUFFER_BIT);
 
 	imModel(Matrix4(1));
-	imView(LookAt(Vector3(-1, -2, 2), Vector3(0, 0, 0), Vector3(0, 0, 1)));
+	imView(LookAt(Vector3(-10, -10, 10), Vector3(0, 0, 0), Vector3(0, 0, 1)));
 	/* TODO Use internal resolution to calculate aspect ratio */
 	imProjection(Perspective(90, 1280.0 / 720.0, 0.1, 100.0));
 

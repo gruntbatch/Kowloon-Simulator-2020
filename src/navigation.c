@@ -4,14 +4,16 @@
 #include "immediate.h"
 #include "logger.h"
 #include <math.h>
+#include <stdio.h>
 #include "stdlib_plus.h"
+#include <string.h>
 
 
 struct Link {
     enum {
-	END,
+	EDGE,
+	NEIGHBOR,
 	PORTAL,
-	TRIANGLE,
     } to;
     int target;
 };
@@ -26,8 +28,9 @@ struct Triangle {
 struct Portal {
     int target;
     int triangle;
+    int width;
     union Vector2 position;
-    union Vector2 size;
+    union Quaternion rotation;
 };
 
 
@@ -56,10 +59,126 @@ static Navmesh navmesh_count = 0;
 static struct Navmesh navmeshes[MAX_NAVMESH_COUNT];
 
 
+Navmesh LoadNavmesh(const char* filepath) {
+    struct Navmesh navmesh;
+    
+    {
+	char nav_filepath[256] = { 0 };
+	strcpy(nav_filepath, filepath);
+	strcat(nav_filepath, ".nav");
+
+	char * source = fopenstr(nav_filepath);
+	if (!source) {
+	    Warn("Unable to open `%s`. Does it exist?\n", nav_filepath);
+	    return MAX_NAVMESH_COUNT;
+	}
+
+	char* line = source;
+	while (line) {
+	    char * endline = strchr(line, '\n');
+	    if (endline) {
+		*endline = '\0';
+
+		struct Triangle t;
+
+		int s = sscanf(line,
+			       "%*i "
+			       "%d,%d,%d "
+			       "%d,%d,%d "
+			       "%f,%f,%*f "
+			       "%f,%f,%*f "
+			       "%f,%f,%*f",
+			       &t.links[0].to, &t.links[1].to, &t.links[2].to,
+			       &t.links[0].target, &t.links[1].target, &t.links[2].target,
+			       &t.triangle.a.x, &t.triangle.a.y, /* &t.triangle.a.z, */
+			       &t.triangle.b.x, &t.triangle.b.y, /* &t.triangle.b.z, */
+			       &t.triangle.c.x, &t.triangle.c.y /*, &t.triangle.c.z */);
+			       
+
+		if (s == 12) {
+		    navmesh.triangles[navmesh.triangle_count++] = t;
+		}
+
+		line = endline + 1;
+	    } else {
+		line = NULL;
+	    }
+	}
+	
+	free(source);
+    }
+
+    {
+	char ptl_filepath[256] = { 0 };
+	strcpy(ptl_filepath, filepath);
+	strcat(ptl_filepath, ".ptl");
+
+	char * source = fopenstr(ptl_filepath);
+	if (!source) {
+	    Warn("Unable to open `%s`. Does it exist?\n", ptl_filepath);
+	    return MAX_NAVMESH_COUNT;
+	}
+
+	char* line = source;
+	while (line) {
+	    char * endline = strchr(line, '\n');
+	    if (endline) {
+		*endline = '\0';
+
+		struct Portal p;
+
+		int s = sscanf(line,
+			       "%*i "
+			       "%d %d "
+			       "%f,%f,%*f "
+			       "%f,%f,%f,%f",
+			       &p.triangle, &p.width,
+			       &p.position.x, &p.position.y, /* &p.position.z, */
+			       &p.rotation.x, &p.rotation.y, &p.rotation.z, &p.rotation.w);
+		
+		if (s == 8) {
+		    navmesh.portals[navmesh.portal_count++] = p;
+		}
+		
+		line = endline + 1;
+	    } else {
+		line = NULL;
+	    }
+	}
+
+	free(source);
+    }
+
+    Navmesh id = navmesh_count++;
+    navmeshes[id] = navmesh;
+    return id;
+}
+
+
 Navmesh CreateTestNavmesh(void) {
     Navmesh id = navmesh_count++;
     struct Navmesh* navmesh = &navmeshes[id];
 
+    navmesh->triangle_count = 2;
+    navmesh->triangles[0] = (struct Triangle) {
+	.triangle={ .a={ .x=1, .y=1 }, .b={ .x=-1, .y=-1 }, .c={ .x=1, .y=-1 } },
+	.links={ { .to=NEIGHBOR, .target=1 },
+		 { .to=PORTAL, .target=1 },
+		 { 0 } },
+    };
+    navmesh->triangles[1] = (struct Triangle) {
+	.triangle={ .a={ .x=1, .y=1 }, .b={ .x=-1, .y=1 }, .c={ .x=-1, .y=-1 } },
+	.links={ { .to=PORTAL, .target=0 },
+		 { 0 },
+		 { .to=NEIGHBOR, .target=0 } },
+    };
+
+    /* navmesh->portal_count = 2; */
+    /* navmesh->portals[0] = (struct Portal) { */
+	/* .target= */
+    /* } */
+    
+    #if 0
     navmesh->triangle_count = 4;
     navmesh->triangles[0] = (struct Triangle) {
 	.triangle={ .a={ .x=-1, .y=-1 }, .b={ .x=1, .y=-1 }, .c={ .x=1, .y=0 } },
@@ -88,15 +207,16 @@ Navmesh CreateTestNavmesh(void) {
     
     navmesh->portal_count = 2;
     navmesh->portals[0] = (struct Portal) {
-	.target=1, .triangle=3,
+	.target=1, .triangle=3, .width=1,
 	.position={ .x=0, .y=1 },
-	.size={ .x=1.5, .y=0.5 },
+	.rotation={ .x=0, .y=0, .z=0, .w=1 },
     };
     navmesh->portals[1] = (struct Portal) {
-	.target=0, .triangle=1,
+	.target=0, .triangle=1, .width=1,
 	.position={ .x=0, .y=-1 },
-	.size={ .x=1.5, .y=0.5 },
+	.rotation={ .x=0, .y=0, .z=0, .w=1 },
     };
+    #endif
 
     return id;
 }
@@ -189,13 +309,18 @@ void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
 	if (hit.i != -1) {
 	    struct Link link = triangle.links[hit.i];
 	    switch (link.to) {
-	    case END: {
+	    case NEIGHBOR: {
+		agent->triangle = link.target;
+		break;
+	    }	    case PORTAL:
+	    case EDGE: {
 		union Vector2 normal = Normalize2(Vector2(-(hit.b.y - hit.a.y),
 							  hit.b.x - hit.a.x));
 		float distance = DistanceToLine2(position, Line2(hit.a, hit.b));
 		force = Add2(force, Scale2(normal, (distance + 0.01) * 66));
 		break;
 	    }
+		#if 0
 	    case PORTAL: {
 		struct Portal portal = navmesh.portals[link.target];
 		struct Portal next_portal = navmesh.portals[portal.target];
@@ -205,10 +330,7 @@ void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
 		agent->triangle = next_portal.triangle;
 		break;
 	    }
-	    case TRIANGLE: {
-		agent->triangle = link.target;
-		break;
-	    }
+		#endif
 	    }
 	} else {
 	    break;
@@ -236,18 +358,19 @@ void imDrawNavmesh(Navmesh id) {
 
     imColor3ub(0, 100, 50);
     for (int i=0; i<navmesh.portal_count; ++i) {
-	struct Portal t = navmesh.portals[i];
+	struct Portal p = navmesh.portals[i];
+	imModel(Transformation(Vector3(p.position.x, p.position.y, 0),
+			       p.rotation,
+			       Vector3(p.width, 1, 1)));
 	imBegin(GL_LINE_LOOP); {
-	    imVertex2f(t.position.x - t.size.x,
-		       t.position.y - t.size.y);
-	    imVertex2f(t.position.x - t.size.x,
-		       t.position.y + t.size.y);
-	    imVertex2f(t.position.x + t.size.x,
-		       t.position.y + t.size.y);
-	    imVertex2f(t.position.x + t.size.x,
-		       t.position.y - t.size.y);
+	    imVertex2f(-1, -1);
+	    imVertex2f(1, -1);
+	    imVertex2f(1, 1);
+	    imVertex2f(-1, 1);
 	} imEnd();
     }
+
+    imModel(Matrix4(1));
 };
 
 

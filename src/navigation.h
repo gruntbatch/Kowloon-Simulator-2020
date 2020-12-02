@@ -6,6 +6,7 @@
 
 
 typedef u32 Navmesh;
+Navmesh LoadNavmesh(const char* filepath);
 Navmesh CreateTestNavmesh(void);
 
 

@@ -3,10 +3,16 @@ import bpy
 import bpy_extras
 from collections import deque
 import mathutils
+import os
 import pprint
 
 
 VERSION = (0, 0, 0)
+
+
+EDGE = 0
+NEIGHBOR = 1
+PORTAL = 2
 
 
 class ExportArea(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
@@ -129,10 +135,10 @@ def structure_navmesh(obj):
             link_faces = loop.edge.link_faces
 
             if len(link_faces) == 1:
-                edge["to"] = 0
+                edge["to"] = EDGE
                 edge["target"] = 0
             elif len(link_faces) == 2:
-                edge["to"] = 1
+                edge["to"] = NEIGHBOR
                 for i, l in enumerate(link_faces):
                     if l.index != face.index:
                         edge["target"] = l.index
@@ -182,7 +188,7 @@ def link_navmesh_to_portals(navmesh, portals):
                             and -b.z <= p.z and p.z <= b.z)
 
                 if in_box(va, scale) and in_box(vb, scale):
-                    triangle[edge]["to"] = 2
+                    triangle[edge]["to"] = PORTAL
                     triangle[edge]["target"] = portal_i
                     if "triangle" in portal:
                         raise Exception("Already linked to a triangle")
