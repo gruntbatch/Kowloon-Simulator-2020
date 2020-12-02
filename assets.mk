@@ -23,17 +23,28 @@ res_to_ass =  $(patsubst %.$(1),$(COOKED_DIR)/%.$(2),$(call strip_path,$(1)))
 
 
 FRAG_ASSETS = $(call res_to_ass,frag,frag)
-MESH_ASSETS = $(call res_to_ass,anio,anio)
+MESH_ASSETS = $(call res_to_ass,mesh,mesh)
+NAV_ASSETS = $(call res_to_ass,nav,nav)
+PTL_ASSETS = $(call res_to_ass,ptl,ptl)
 TEXTURE_ASSETS = $(call res_to_ass,png,png)
 VERT_ASSETS = $(call res_to_ass,vert,vert)
-ASSET_FILES = $(FRAG_ASSETS) $(MESH_ASSETS) $(TEXTURE_ASSETS) $(VERT_ASSETS)
+
+ASSET_FILES = $(FRAG_ASSETS) $(MESH_ASSETS) $(NAV_ASSETS) $(PTL_ASSETS) $(TEXTURE_ASSETS) $(VERT_ASSETS)
 
 
-$(COOKED_DIR)/%.frag : $(UNCOOKED_DIR)/%.frag $(UNCOOKED_DIR)/shaders/*.glsl
+$(COOKED_DIR)/%.frag: $(UNCOOKED_DIR)/%.frag $(UNCOOKED_DIR)/shaders/*.glsl
 	mkdir -p $(@D)
 	python tools/glsl_includer.py $< $@
 
-$(COOKED_DIR)/%.anio : $(UNCOOKED_DIR)/%.anio
+$(COOKED_DIR)/%.mesh: $(UNCOOKED_DIR)/%.mesh
+	mkdir -p $(@D)
+	cp $< $@
+
+$(COOKED_DIR)/%.nav: $(UNCOOKED_DIR)/%.nav
+	mkdir -p $(@D)
+	cp $< $@
+
+$(COOKED_DIR)/%.ptl: $(UNCOOKED_DIR)/%.ptl
 	mkdir -p $(@D)
 	cp $< $@
 
