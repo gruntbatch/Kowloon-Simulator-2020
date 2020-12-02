@@ -21,6 +21,7 @@ def menu_func_export(self, context):
     
 
 def register():
+    io_kowl.VERSION = bl_info["version"]
     bpy.utils.register_class(io_kowl.ExportArea)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 

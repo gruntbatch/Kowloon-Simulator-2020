@@ -6,6 +6,9 @@ import mathutils
 import pprint
 
 
+VERSION = (0, 0, 0)
+
+
 class ExportArea(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
     bl_idname = "kowl.export_map"
     bl_label = "Export Kowl Area"
@@ -157,12 +160,12 @@ def structure_portals(objs):
 
 
 def link_navmesh_to_portals(navmesh, portals):
-    for triangle in navmesh:
+    for triangle_i, triangle in enumerate(navmesh):
         for edge in range(3):
             a = triangle[edge]
             b = triangle[(edge + 1) % 3]
 
-            for i, portal in enumerate(portals):
+            for portal_i, portal in enumerate(portals):
                 transform = portal["transform"]
                 scale = transform.to_scale()
 
@@ -180,37 +183,50 @@ def link_navmesh_to_portals(navmesh, portals):
 
                 if in_box(va, scale) and in_box(vb, scale):
                     triangle[edge]["to"] = 2
-                    triangle[edge]["target"] = i
-                    if "edge" in portal:
-                        raise Exception("Already an edge!")
+                    triangle[edge]["target"] = portal_i
+                    if "triangle" in portal:
+                        raise Exception("Already linked to a triangle")
                     else:
-                        portal["edge"] = edge
+                        portal["triangle"] = triangle_i
 
 
-def export_areas(filepath, areas):
-    with open(filepath, "w", encoding="utf8", newline="\n") as f:
-        fw = f.write
+def export_areas(path, areas):
+    INFO = "# io_kowl v{}.{}.{}\n".format(*VERSION)
+    dirname = os.path.dirname(path)
+    for area in areas:
+        name = area["name"]
 
-        fw("# NAVIGATION\n")
-        fw("\n")
+        # TODO Save area info
 
-        # TODO Save each area to its own set of files
-        for area in areas:
-            for i, triangle in enumerate(area["navmesh"]):
+        with open(os.path.join(dirname, name + ".nav"), "w", encoding="utf8", newline="\n") as f:
+            fw = f.write
+
+            fw(INFO)
+            fw("# NAVMESH\n")
+            fw("\n")
+            
+            fw("# [index] [to] [target] [points]\n")
+            for index, triangle in enumerate(area["navmesh"]):
                 to = [x["to"] for x in triangle]
                 target = [x["target"] for x in triangle]
                 vert = [x["vert"] for x in triangle]
-                fw("triangle ")
-                fw("{} ".format(i))
+                fw("{} ".format(index))
                 fw("{},{},{} ".format(*to))
                 fw("{},{},{} ".format(*target))
                 fw("{} {} {}\n".format(*["{:.3f},{:.3f},{:.3f}".format(*x.to_tuple()) for x in vert]))
-            
+        
+        with open(os.path.join(dirname, name + ".ptl"), "w", encoding="utf8", newline="\n") as f:
+            fw = f.write
+
+            fw(INFO)
+            fw("# PORTALS\n")
             fw("\n")
-            for i, portal in enumerate(area["portals"]):
+            
+            fw("# [index] [linked_triangle] [width] [position] [rotation]\n")
+            for index, portal in enumerate(area["portals"]):
                 p, r, s = portal["transform"].decompose()
-                fw("portal ")
-                fw("{} ".format(i))
+                fw("{} ".format(index))
+                fw("{} ".format(portal["triangle"]))
                 fw("{} ".format(int(round(s.x))))
                 fw("{},{},{} ".format(*p.to_tuple()))
                 fw("{},{},{},{}\n".format(r.x, r.y, r.z, r.w))
