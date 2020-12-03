@@ -29,8 +29,8 @@ struct Portal {
     int target;
     int triangle;
     int width;
-    union Vector2 position;
-    union Quaternion rotation;
+    union Matrix4 transform_in;
+    union Matrix4 transform_out;
 };
 
 
@@ -125,19 +125,27 @@ Navmesh LoadNavmesh(const char* filepath) {
 	    if (endline) {
 		*endline = '\0';
 
-		struct Portal p;
+		int triangle = 0;
+		int width = 0;
+		union Vector3 position = { 0 };
+		union Quaternion rotation = { 0 };
 
 		int s = sscanf(line,
 			       "%*i "
 			       "%d %d "
 			       "%f,%f,%*f "
 			       "%f,%f,%f,%f",
-			       &p.triangle, &p.width,
-			       &p.position.x, &p.position.y, /* &p.position.z, */
-			       &p.rotation.x, &p.rotation.y, &p.rotation.z, &p.rotation.w);
+			       &triangle, &width,
+			       &position.x, &position.y, /* &p.position.z, */
+			       &rotation.x, &rotation.y, &rotation.z, &rotation.w);
 		
 		if (s == 8) {
-		    navmesh.portals[navmesh.portal_count++] = p;
+		    struct Portal* p = &navmesh.portals[navmesh.portal_count++];
+		    p->target = 0;
+		    p->triangle = triangle;
+		    p->width = width;
+		    p->transform_in = Transformation(position, rotation, Vector3(1, 1, 1));
+		    p->transform_out = Transformation(position, MulQ(rotation, AxisAngle(Vector3(0, 0, 1), PI)), Vector3(1, 1, 1));
 		}
 		
 		line = endline + 1;
@@ -256,8 +264,14 @@ void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
 	    case PORTAL: {
 		struct Portal portal = navmesh.portals[link.target];
 		struct Portal next_portal = navmesh.portals[portal.target];
-		union Vector2 offset = Sub2(portal.position, next_portal.position);
-		agent->position = Sub2(agent->position, offset);
+
+		union Matrix4 transform = MulM4(next_portal.transform_in, InvertM4(portal.transform_out));
+		agent->position = Transform4(transform, Vector4(position.x, position.y, 0, 1)).xy;
+
+		/* We do _not_ want to translate acceleration and velocity, only scale and rotate them */
+		transform.vectors[3] = Vector4(0, 0, 0, 1);
+		agent->acceleration = Transform4(transform, Vector4(acceleration.x, acceleration.y, 0, 1)).xy;
+		agent->velocity = Transform4(transform, Vector4(velocity.x, velocity.y, 0, 1)).xy;
 
 		agent->triangle = next_portal.triangle;
 		break;
@@ -289,10 +303,7 @@ void imDrawNavmesh(Navmesh id) {
 
     imColor3ub(0, 100, 50);
     for (int i=0; i<navmesh.portal_count; ++i) {
-	struct Portal p = navmesh.portals[i];
-	imModel(Transformation(Vector3(p.position.x, p.position.y, 0),
-			       p.rotation,
-			       Vector3(p.width, 1, 1)));
+	imModel(navmesh.portals[i].transform_in);
 	imBegin(GL_LINE_LOOP); {
 	    imVertex2f(-1, -1);
 	    imVertex2f(1, -1);
