@@ -146,42 +146,6 @@ float Sign2(union Vector2 p, struct Line2 l) {
 }
 
 
-static union Vector2 to_barycentric(union Vector2 p, union Triangle2 t) {
-    union Vector2 ab, ac, ap;
-    ab = Sub2(t.b, t.a);
-    ac = Sub2(t.c, t.a);
-    ap = Sub2(p, t.a);
-
-    float d00 = Dot2(ab, ab);
-    float d01 = Dot2(ab, ac);
-    float d11 = Dot2(ac, ac);
-    float d20 = Dot2(ap, ab);
-    float d21 = Dot2(ap, ac);
-
-    float d = 1.0 / (d00 * d11 - d01 * d01);
-
-    float u = (d11 * d20 - d01 * d21) * d;
-    float v = (d00 * d21 - d01 * d20) * d;
-    /* float w = 1.0f - u - v; */
-
-    return Vector2(u, v);
-}
-
-
-static union Vector2 from_barycentric(union Vector2 p, union Triangle2 t) {
-    union Vector2 ab, ac;
-    ab = Sub2(t.b, t.a);
-    ac = Sub2(t.c, t.a);
-    return Add2(Add2(Scale2(ab, p.u), Scale2(ac, p.v)), t.a);
-}
-
-
-int InsideTriangle2(union Vector2 p, union Triangle2 t) {
-    union Vector2 uv = to_barycentric(p, t);
-    return (0 <= uv.u && 0 <= uv.v && uv.u + uv.v <= 1);
-}
-
-
 union Vector3 Vector3(f32 x, f32 y, f32 z) {
     return (union Vector3) { .x=x, .y=y, .z=z };
 }
@@ -513,6 +477,42 @@ union IRect IRect(i32 x, i32 y, i32 width, i32 height) {
 
 union Rect Rect(f32 x, f32 y, f32 width, f32 height) {
     return (union Rect) { .x=x, .y=y, .width=width, .height=height };
+}
+
+
+static union Vector2 to_barycentric(union Vector2 p, union Triangle2 t) {
+    union Vector2 ab, ac, ap;
+    ab = Sub2(t.b, t.a);
+    ac = Sub2(t.c, t.a);
+    ap = Sub2(p, t.a);
+
+    float d00 = Dot2(ab, ab);
+    float d01 = Dot2(ab, ac);
+    float d11 = Dot2(ac, ac);
+    float d20 = Dot2(ap, ab);
+    float d21 = Dot2(ap, ac);
+
+    float d = 1.0 / (d00 * d11 - d01 * d01);
+
+    float u = (d11 * d20 - d01 * d21) * d;
+    float v = (d00 * d21 - d01 * d20) * d;
+    /* float w = 1.0f - u - v; */
+
+    return Vector2(u, v);
+}
+
+
+static union Vector2 from_barycentric(union Vector2 p, union Triangle2 t) {
+    union Vector2 ab, ac;
+    ab = Sub2(t.b, t.a);
+    ac = Sub2(t.c, t.a);
+    return Add2(Add2(Scale2(ab, p.u), Scale2(ac, p.v)), t.a);
+}
+
+
+int InsideTriangle2(union Vector2 p, union Triangle2 t) {
+    union Vector2 uv = to_barycentric(p, t);
+    return (0 <= uv.u && 0 <= uv.v && uv.u + uv.v <= 1);
 }
 
 
