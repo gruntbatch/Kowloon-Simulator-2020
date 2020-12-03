@@ -10,6 +10,7 @@ import pprint
 VERSION = (0, 0, 0)
 
 
+# These must be kept in sync with `Link` types in `navigation.c`
 EDGE = 0
 NEIGHBOR = 1
 PORTAL = 2
@@ -21,15 +22,14 @@ class ExportArea(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
 
     # Give the ExportHelper class a file extension to use
     filename_ext = '.area'
-    filter_glob = bpy.props.StringProperty(default="*.area",
-                                           options={'HIDDEN'},
-                                           maxlen=255)
+    filter_glob: bpy.props.StringProperty(default="*.area",
+                                          options={'HIDDEN'},
+                                          maxlen=255)
 
     def execute(self, context):
         areas = list()
         parse_areas(context.scene.collection, areas)
         structure_areas(areas)
-        pprint.pprint(areas, compact=False, indent=2)
         export_areas(self.filepath, areas)
         return {"FINISHED"}
 
@@ -109,28 +109,21 @@ def structure_areas(areas):
 def structure_navmesh(obj):
     bm = bmesh.new()
     bm.from_mesh(obj.data)
-    bmesh.ops.triangulate(bm, faces=bm.faces)
-    bmesh.ops.transform(bm, matrix=obj.matrix_world, verts=bm.verts)
-
-    triangles = list()
 
     if len(bm.faces) > 64:
         raise Exception("{} has more than 64 triangles".format(obj.name))
+    
+    bmesh.ops.triangulate(bm, faces=bm.faces)
+    bmesh.ops.transform(bm, matrix=obj.matrix_world, verts=bm.verts)
 
-    # I'm not actually sure that bm.faces is guaranteed to iterate in
-    # order of the face indices, so we perform a short test to enforce
-    # that it does
-    for i, face in enumerate(bm.faces):
-        if i != face.index:
-            raise Exception("`bm.faces` does not iterate in index order")
+    vertices = [x.co.copy() for x in bm.verts]
+    triangles = list()
 
+    for face in bm.faces:
         triangle = list()
-
-        if len(face.loops) != 3:
-            raise Exception("Triangulation failed")
         
         for loop in face.loops:
-            edge = dict({"vert": loop.vert.co})
+            edge = dict({"vertex_i": loop.vert.index})
 
             link_faces = loop.edge.link_faces
 
@@ -151,7 +144,7 @@ def structure_navmesh(obj):
 
     bm.free()
 
-    return triangles
+    return {"vertices": vertices, "triangles": triangles}
 
 
 def structure_portals(objs):
@@ -159,41 +152,42 @@ def structure_portals(objs):
 
     for obj in objs:
         portals.append({
-            "transform": obj.matrix_world
+            "name": obj.name,
+            "transform": obj.matrix_world,
+            "width": round(obj.matrix_world.to_scale().x)
         })
 
     return portals
 
 
 def link_navmesh_to_portals(navmesh, portals):
-    for triangle_i, triangle in enumerate(navmesh):
-        for edge in range(3):
-            a = triangle[edge]
-            b = triangle[(edge + 1) % 3]
+    def in_bounds(p, b):
+        return abs(p.x) <= b.x and abs(p.y) <= b.y and abs(p.z) <= b.z
+    
+    for portal_i, portal in enumerate(portals):
+        transform = portal["transform"]
+        half_width = portal["width"] / 2.0
+        bounds = transform.to_scale()
+        inverted_transform = transform.inverted()
 
-            for portal_i, portal in enumerate(portals):
-                transform = portal["transform"]
-                scale = transform.to_scale()
+        for triangle_i, triangle in enumerate(navmesh["triangles"]):
+            for edge_i, edge in enumerate(triangle):
+                a_i = triangle[edge_i]["vertex_i"]
+                b_i = triangle[(edge_i + 1) % 3]["vertex_i"]
+                a = inverted_transform @ navmesh["vertices"][a_i]
+                b = inverted_transform @ navmesh["vertices"][b_i]
 
-                # Transform the vertices into local space
-                transform = transform.inverted()
-                va = transform @ a["vert"]
-                vb = transform @ b["vert"]
-
-                print(va, vb)
-
-                def in_box(p, b):
-                    return (-b.x <= p.x and p.x <= b.x
-                            and -b.y <= p.y and p.y <= b.y
-                            and -b.z <= p.z and p.z <= b.z)
-
-                if in_box(va, scale) and in_box(vb, scale):
-                    triangle[edge]["to"] = PORTAL
-                    triangle[edge]["target"] = portal_i
+                if in_bounds(a, bounds) and in_bounds(b, bounds):
                     if "triangle" in portal:
-                        raise Exception("Already linked to a triangle")
-                    else:
-                        portal["triangle"] = triangle_i
+                        raise Exception("`{}` contains too many edges".format(portal["name"]))
+                    
+                    portal["triangle"] = triangle_i
+
+                    navmesh["vertices"][a_i] = transform @ mathutils.Vector((-half_width, 0, 0))
+                    navmesh["vertices"][b_i] = transform @ mathutils.Vector((half_width, 0, 0))
+
+                    edge["to"] = PORTAL
+                    edge["target"] = portal_i
 
 
 def export_areas(path, areas):
@@ -212,14 +206,16 @@ def export_areas(path, areas):
             fw("\n")
             
             fw("# [index] [to] [target] [points]\n")
-            for index, triangle in enumerate(area["navmesh"]):
-                to = [x["to"] for x in triangle]
-                target = [x["target"] for x in triangle]
-                vert = [x["vert"] for x in triangle]
+            navmesh = area["navmesh"]
+            for index, triangle in enumerate(navmesh["triangles"]):
+                tos = [x["to"] for x in triangle]
+                targets = [x["target"] for x in triangle]
+                vertex_is = [x["vertex_i"] for x in triangle]
+                vertices = [navmesh["vertices"][i] for i in vertex_is]
                 fw("{} ".format(index))
-                fw("{},{},{} ".format(*to))
-                fw("{},{},{} ".format(*target))
-                fw("{} {} {}\n".format(*["{:.3f},{:.3f},{:.3f}".format(*x.to_tuple()) for x in vert]))
+                fw("{},{},{} ".format(*tos))
+                fw("{},{},{} ".format(*targets))
+                fw("{} {} {}\n".format(*["{:.3f},{:.3f},{:.3f}".format(*x.to_tuple()) for x in vertices]))
         
         with open(os.path.join(dirname, name + ".ptl"), "w", encoding="utf8", newline="\n") as f:
             fw = f.write

@@ -309,10 +309,6 @@ void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
 	if (hit.i != -1) {
 	    struct Link link = triangle.links[hit.i];
 	    switch (link.to) {
-	    case NEIGHBOR: {
-		agent->triangle = link.target;
-		break;
-	    }	    case PORTAL:
 	    case EDGE: {
 		union Vector2 normal = Normalize2(Vector2(-(hit.b.y - hit.a.y),
 							  hit.b.x - hit.a.x));
@@ -320,7 +316,10 @@ void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
 		force = Add2(force, Scale2(normal, (distance + 0.01) * 66));
 		break;
 	    }
-		#if 0
+	    case NEIGHBOR: {
+		agent->triangle = link.target;
+		break;
+	    }
 	    case PORTAL: {
 		struct Portal portal = navmesh.portals[link.target];
 		struct Portal next_portal = navmesh.portals[portal.target];
@@ -330,7 +329,6 @@ void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
 		agent->triangle = next_portal.triangle;
 		break;
 	    }
-		#endif
 	    }
 	} else {
 	    break;

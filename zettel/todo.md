@@ -1,12 +1,8 @@
 TODO
 ====
 
-  - Export navigation maps
-  - Locate vertices within portals
-  - Assert only two vertices within a portal
+  - Refactor exporter to store vertices and edges seperately
   - Establish some way of tying  together textures and meshes
-  - Author navigation meshes
-  - Import navigation meshes
   - Pathfinding
   - Parse config file
   - Parse command line arguments
