@@ -482,8 +482,8 @@ union Rect Rect(f32 x, f32 y, f32 width, f32 height) {
 
 union Vector2 FromBarycentric2(union Vector3 _, union Vector2 a, union Vector2 b, union Vector2 c) {
     return (union Vector2) {
-	.x=_.u * a.x + _.v * b.x + _.w * c.x,
-	.y=_.u * a.y + _.v * b.y + _.w * c.y,
+	.x=_.u * b.x + _.v * c.x + _.w * a.x,
+	.y=_.u * b.y + _.v * c.y + _.w * a.y,
     };
 }
 
@@ -511,9 +511,9 @@ union Vector3 ToBarycentric2(union Vector2 p, union Vector2 a, union Vector2 b, 
 
 union Vector3 FromBarycentric3(union Vector3 _, union Vector3 a, union Vector3 b, union Vector3 c) {
     return (union Vector3) {
-	.x=_.u * a.x + _.v * b.x + _.w * c.x,
-	.y=_.u * a.y + _.v * b.y + _.w * c.y,
-	.z=_.u * a.z + _.v * b.z + _.w * c.z,
+	.x=_.u * b.x + _.v * c.x + _.w * a.x,
+	.y=_.u * b.y + _.v * c.y + _.w * a.y,
+	.z=_.u * b.z + _.v * c.z + _.w * a.z,
     };
 }
 
