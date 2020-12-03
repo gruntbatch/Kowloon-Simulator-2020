@@ -336,8 +336,11 @@ void imDrawAgent(Agent id, float radius) {
     } else {
 	imColor3ub(255, 127, 0);
     }
-    
-    imModel(Translation(Vector3(agent.position.x, agent.position.y, 0)));
+
+    imModel(Translation(From2To3(agent.position,
+				 triangle.triangle.a,
+				 triangle.triangle.b,
+				 triangle.triangle.c)));
     imBegin(GL_LINE_LOOP); {
 	imVertex2f(0, radius);
 	imVertex2f(radius, 0);

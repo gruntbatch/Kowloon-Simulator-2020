@@ -158,6 +158,7 @@ union Triangle3 {
 };
 
 
+union Vector3 From2To3(union Vector2 p, union Vector3 a, union Vector3 b, union Vector3 c);
 union Vector3 FromBarycentric3(union Vector3 bary, union Vector3 a, union Vector3 b, union Vector3 c);
 union Vector3 ToBarycentric3(union Vector3, union Vector3 a, union Vector3 b, union Vector3 c);
 

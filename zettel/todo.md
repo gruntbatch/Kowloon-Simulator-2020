@@ -1,7 +1,8 @@
 TODO
 ====
 
-  - Refactor exporter to store vertices and edges seperately
+  - Move navmeshes to the third dimension
+  - Build a map from navmesh parts
   - Establish some way of tying  together textures and meshes
   - Pathfinding
   - Parse config file

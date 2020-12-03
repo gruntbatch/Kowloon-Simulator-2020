@@ -182,7 +182,7 @@ static enum Continue loop(void) {
 					    FromBase("assets/shaders/world_space.vert")),
 				 LoadShader(GL_FRAGMENT_SHADER,
 					    FromBase("assets/shaders/vertex_color.frag")));
-    Navmesh navmesh = LoadNavmesh("assets/areas/grotto");
+    Navmesh navmesh = LoadNavmesh("assets/areas/loop");
     Agent agent = CreateAgent(navmesh);
 
     /* GLuint64 vertex_array = rtGenVertexArray(); */

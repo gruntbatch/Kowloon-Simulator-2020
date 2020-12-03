@@ -509,6 +509,11 @@ union Vector3 ToBarycentric2(union Vector2 p, union Vector2 a, union Vector2 b, 
 }
 
 
+union Vector3 From2To3(union Vector2 p, union Vector3 a, union Vector3 b, union Vector3 c) {
+    return FromBarycentric3(ToBarycentric2(p, a.xy, b.xy, c.xy), a, b, c);
+}
+
+
 union Vector3 FromBarycentric3(union Vector3 _, union Vector3 a, union Vector3 b, union Vector3 c) {
     return (union Vector3) {
 	.x=_.u * b.x + _.v * c.x + _.w * a.x,
