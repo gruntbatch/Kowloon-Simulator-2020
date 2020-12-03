@@ -20,7 +20,7 @@ struct Link {
 
 
 struct Triangle {
-    union Triangle2 triangle;
+    union Triangle3 triangle;
     struct Link links[3];
 };
 
@@ -85,17 +85,17 @@ Navmesh LoadNavmesh(const char* filepath) {
 			       "%*i "
 			       "%d,%d,%d "
 			       "%d,%d,%d "
-			       "%f,%f,%*f "
-			       "%f,%f,%*f "
-			       "%f,%f,%*f",
+			       "%f,%f,%f "
+			       "%f,%f,%f "
+			       "%f,%f,%f",
 			       &t.links[0].to, &t.links[1].to, &t.links[2].to,
 			       &t.links[0].target, &t.links[1].target, &t.links[2].target,
-			       &t.triangle.a.x, &t.triangle.a.y, /* &t.triangle.a.z, */
-			       &t.triangle.b.x, &t.triangle.b.y, /* &t.triangle.b.z, */
-			       &t.triangle.c.x, &t.triangle.c.y /*, &t.triangle.c.z */);
+			       &t.triangle.a.x, &t.triangle.a.y, &t.triangle.a.z,
+			       &t.triangle.b.x, &t.triangle.b.y, &t.triangle.b.z,
+			       &t.triangle.c.x, &t.triangle.c.y, &t.triangle.c.z);
 			       
 
-		if (s == 12) {
+		if (s == 15) {
 		    navmesh.triangles[navmesh.triangle_count++] = t;
 		}
 
@@ -133,13 +133,13 @@ Navmesh LoadNavmesh(const char* filepath) {
 		int s = sscanf(line,
 			       "%*i "
 			       "%d %d "
-			       "%f,%f,%*f "
+			       "%f,%f,%f "
 			       "%f,%f,%f,%f",
 			       &triangle, &width,
-			       &position.x, &position.y, /* &p.position.z, */
+			       &position.x, &position.y, &position.z,
 			       &rotation.x, &rotation.y, &rotation.z, &rotation.w);
 		
-		if (s == 8) {
+		if (s == 9) {
 		    struct Portal* p = &navmesh.portals[navmesh.portal_count++];
 		    p->target = 0;
 		    p->triangle = triangle;
@@ -185,7 +185,9 @@ Agent CreateAgent(Navmesh navmesh_id) {
     struct Navmesh navmesh = navmeshes[navmesh_id];
     agent->triangle = rand() % navmesh.triangle_count;
     struct Triangle t = navmesh.triangles[agent->triangle];
-    agent->position = Scale2(Add2(t.triangle.a, Add2(t.triangle.b, t.triangle.c)), 1.0 / 3.0);
+    agent->position = Scale2(Add2(t.triangle.a.xy,
+				  Add2(t.triangle.b.xy, t.triangle.c.xy)),
+			     1.0 / 3.0);
     agent->velocity = Vector2(0, 0);
     agent->mass = 1.0f;
     agent->acceleration = Vector2(0, 0);
@@ -229,8 +231,8 @@ void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
 
 	for (int i=0; i<3 /* ilyt */; i++) {
 	    union Vector2 a, b;
-	    a = triangle.triangle.p[i];
-	    b = triangle.triangle.p[(i + 1) % 3];
+	    a = triangle.triangle.p[i].xy;
+	    b = triangle.triangle.p[(i + 1) % 3].xy;
 
 	    float s = Sign2(position, Line2(a, b));
 	    if (s <= 0) {
@@ -295,9 +297,9 @@ void imDrawNavmesh(Navmesh id) {
     for (int i=0; i<navmesh.triangle_count; ++i) {
 	struct Triangle t = navmesh.triangles[i];
 	imBegin(GL_LINE_LOOP); {
-	    imVertex2(t.triangle.a);
-	    imVertex2(t.triangle.b);
-	    imVertex2(t.triangle.c);
+	    imVertex3(t.triangle.a);
+	    imVertex3(t.triangle.b);
+	    imVertex3(t.triangle.c);
 	} imEnd();
     }
 
@@ -323,13 +325,13 @@ void imDrawAgent(Agent id, float radius) {
 
     imColor3ub(255, 255, 0);
     imBegin(GL_LINE_LOOP); {
-	imVertex2(triangle.triangle.a);
-	imVertex2(triangle.triangle.b);
-	imVertex2(triangle.triangle.c);
+	imVertex3(triangle.triangle.a);
+	imVertex3(triangle.triangle.b);
+	imVertex3(triangle.triangle.c);
     } imEnd();
 
-    union Triangle2 t = triangle.triangle;
-    if (InsideTriangle2(agent.position, t.a, t.b, t.c)) {
+    union Triangle3 t = triangle.triangle;
+    if (InsideTriangle2(agent.position, t.a.xy, t.b.xy, t.c.xy)) {
 	imColor3ub(0, 255, 255);
     } else {
 	imColor3ub(255, 127, 0);
