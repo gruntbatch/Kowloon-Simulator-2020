@@ -328,7 +328,8 @@ void imDrawAgent(Agent id, float radius) {
 	imVertex2(triangle.triangle.c);
     } imEnd();
 
-    if (InsideTriangle2(agent.position, triangle.triangle)) {
+    union Triangle2 t = triangle.triangle;
+    if (InsideTriangle2(agent.position, t.a, t.b, t.c)) {
 	imColor3ub(0, 255, 255);
     } else {
 	imColor3ub(255, 127, 0);

@@ -40,6 +40,7 @@ float Sign2(union Vector2 p, struct Line2 l);
 union Vector3 {
     struct { f32 x, y, z; };
     struct { f32 r, g, b; };
+    struct { f32 u, v, w; };
     struct { union Vector2 xy; };
 };
 
@@ -146,7 +147,19 @@ union Triangle2 {
 };
 
 
-int InsideTriangle2(union Vector2 p, union Triangle2 t);
+union Vector2 FromBarycentric2(union Vector3 bary, union Vector2 a, union Vector2 b, union Vector2 c);
+int InsideTriangle2(union Vector2 p, union Vector2 a, union Vector2 b, union Vector2 c);
+union Vector3 ToBarycentric2(union Vector2, union Vector2 a, union Vector2 b, union Vector2 c);
+
+
+union Triangle3 {
+    struct { union Vector3 a, b, c; };
+    union Vector3 p[3];
+};
+
+
+union Vector3 FromBarycentric3(union Vector3 bary, union Vector3 a, union Vector3 b, union Vector3 c);
+union Vector3 ToBarycentric3(union Vector3, union Vector3 a, union Vector3 b, union Vector3 c);
 
 
 f32 Value1(f32 point);
