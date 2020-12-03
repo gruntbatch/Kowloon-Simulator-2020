@@ -56,11 +56,11 @@ struct Navmesh {
 
 #define MAX_NAVMESH_COUNT 32
 static Navmesh navmesh_count = 0;
-static struct Navmesh navmeshes[MAX_NAVMESH_COUNT];
+static struct Navmesh navmeshes[MAX_NAVMESH_COUNT] = { 0 };
 
 
 Navmesh LoadNavmesh(const char* filepath) {
-    struct Navmesh navmesh;
+    struct Navmesh navmesh = { 0 };
     
     {
 	char nav_filepath[256] = { 0 };
