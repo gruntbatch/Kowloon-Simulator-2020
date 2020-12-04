@@ -5,7 +5,8 @@
 #include "mathematics.h"
 
 
-const struct UniformBuffer MATRIX_BUFFER;
+/* TODO Delete this? */
+extern const struct UniformBuffer MATRIX_BUFFER;
 
 
 void imInitTransformBuffer(void);
