@@ -35,8 +35,8 @@ typedef float f32;
 typedef double f64;
 
 
-#define PI M_PI
-#define PI2 M_PI_2
+#define PI (3.14159265358979323846)
+#define PI2 (2.0 * PI)
 
 #define RADIANS (PI / 180.0f)
 #define TO_RADIANS(degrees) (degrees * RADIANS)
