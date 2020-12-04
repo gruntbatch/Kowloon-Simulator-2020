@@ -1,8 +1,11 @@
 #
 # Executable
 #
-# TODO Rename based on platform
-EXE_FILE = $(BIN_DIR)/Cyberpunk1977
+ifeq ($(PLATFORM),macOS)
+	EXE_FILE = $(BIN_DIR)/Cyberpunk1997
+else ifeq ($(PLATFORM),Win32)
+	EXE_FILE = $(BIN_DIR)/Cyberpunk1997.exe
+endif
 
 
 #
@@ -42,13 +45,22 @@ CFLAGS += -I$(SRC_DIR)
 LDFLAGS += -g
 
 # Platform specific flags
-ifeq ($(shell uname -s), Darwin)
+ifeq ($(PLATFORM),macOS)
 # Link against OpenGL
 	LDFLAGS += -framework OpenGL
 
 # Link against SDL2
 	CFLAGS += $(shell sdl2-config --cflags)
 	LDFLAGS += $(shell sdl2-config --libs)
+else ifeq($(PLATFORM),Win32)
+	CFLAGS += -I..\SDL2-2.0.12\i686-w64-mingw32\include\SDL2
+#	LDFLAGS += -lmingw32
+#	LDFLAGS += -LC:\Users\Walpole\Desktop\SDL2-2.0.12\i686-w64-mingw32\lib
+	LDFLAGS += -L..\SDL2-2.0.12\i686-w64-mingw32\lib
+	LDLIBS += -lmingw32
+	LDLIBS += -lopengl32
+	LDLIBS += -lSDL2main
+	LDLIBS += -lSDL2
 endif
 
 

@@ -1,4 +1,15 @@
 #
+# Platform detection
+#
+ifeq ($(OS),Windows_NT)
+	PLATFORM := Win32
+else ifeq ($(shell uname -s),Darwin)
+	PLATFORM := macOS
+else
+	$(error Unsupported platform)
+endif
+
+#
 # Top level declarations
 #
 # Any declarations common to multiple makefiles should go here.
