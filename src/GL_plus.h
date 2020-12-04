@@ -1,9 +1,7 @@
 #pragma once
 
 
-/* TODO This might not be portable code */
-#define GL_GLEXT_PROTOTYPES
-#include <SDL_opengl.h>
+#include <GL/glew.h>
 
 
 const char * glEnumToString(GLenum e);

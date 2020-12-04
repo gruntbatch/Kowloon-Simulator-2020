@@ -1,4 +1,5 @@
 #include "events.h"
+#include "GL_plus.h"
 #include "immediate.h"
 #include "logger.h"
 #include "navigation.h"
@@ -87,6 +88,12 @@ static enum Continue create_gl_context(void) {
 	Err("Unable to create an OpenGL context because %s\n",
 	    SDL_GetError());
 	return STOP;
+    }
+
+    GLenum err = glewInit();
+    if (GLEW_OK != err) {
+      Err("Unable to initialize GLEW because %s\n", glewGetErrorString(err));
+      return STOP;
     }
 
     glEnable(GL_DEPTH_TEST);

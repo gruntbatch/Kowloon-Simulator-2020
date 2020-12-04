@@ -7,5 +7,6 @@
 assets/areas/
 bin/
 build/
+lib/
 
 *.anio
