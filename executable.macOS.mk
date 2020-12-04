@@ -34,10 +34,13 @@ CFLAGS += -Wno-error=unused-variable -Wno-error=unused-function
 CFLAGS += -g3 -DDEBUG -DSTRICT
 # Explicitly include the source directory.
 CFLAGS += -I$(SRC_DIR)
+CFLAGS += /usr/local/include
 CFLAGS += $(shell sdl2-config --cflags)
 
 LDFLAGS += -g
 LDFLAGS += -framework OpenGL
+LDFLAGS += -L/usr/local/lib
+LDFLAGS += -lGLEW
 LDFLAGS += $(shell sdl2-config --libs)
 
 
