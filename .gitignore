@@ -4,7 +4,7 @@
 
 *.pyc
 
-assets/areas/
+assets_bin/
 bin/
 build/
 lib/*
