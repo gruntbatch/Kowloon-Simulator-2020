@@ -8,6 +8,6 @@ assets/areas/
 bin/
 build/
 lib/*
-!lib/LIBRARIES.md
+!lib/README.md
 
 *.anio
