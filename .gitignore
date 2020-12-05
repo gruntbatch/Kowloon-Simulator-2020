@@ -7,6 +7,7 @@
 assets/areas/
 bin/
 build/
-lib/
+lib/*
+!lib/LIBRARIES.md
 
 *.anio
