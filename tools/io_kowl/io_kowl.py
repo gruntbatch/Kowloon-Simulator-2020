@@ -27,10 +27,11 @@ class ExportArea(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                                           maxlen=255)
 
     def execute(self, context):
-        areas = list()
-        parse_areas(context.scene.collection, areas)
-        structure_areas(areas)
-        export_areas(self.filepath, areas)
+        data = dict()
+        parse_areas(context.scene.collection, data.setdefault("areas", list()))
+        structure_data(data)
+        pprint.pprint(data)
+        export_areas(self.filepath, data)
         return {"FINISHED"}
 
 
@@ -70,8 +71,11 @@ def parse_area(collection, area):
             elif token == "@portal":
                 area.setdefault("portals", list()).append(child)
 
-            elif token == "@var":
-                area.setdefault("vars", dict()).setdefault(tokens.popleft(), list()).append([child])
+            elif token == "@export":
+                area.setdefault("exports", list()).append([child])
+
+            # elif token == "@var":
+                # area.setdefault("vars", dict()).setdefault(tokens.popleft(), list()).append([child])
 
             else:
                 pass
@@ -84,8 +88,11 @@ def parse_area(collection, area):
             if token == "@ignore":
                 break
 
-            elif token == "@var":
-                area.setdefault("vars", dict()).setdefault(tokens.popleft(), list()).append(list(child.objects))
+            elif token == "@export":
+                area.setdefault("exports", list()).append(list(child.objects))
+
+            # elif token == "@var":
+                # area.setdefault("vars", dict()).setdefault(tokens.popleft(), list()).append(list(child.objects))
 
             else:
                 pass
@@ -99,11 +106,16 @@ def tokenize(children):
         yield deque(child.name.rsplit('.', 1)[0].split()), child
 
 
-def structure_areas(areas):
-    for area in areas:
+def structure_data(data):
+    data["meshes"] = dict()
+    
+    for area in data["areas"]:
+        area["exports"] = structure_exports(area.get("exports", list()), data["meshes"])
         area["navmesh"] = structure_navmesh(area["navmesh"])
         area["portals"] = structure_portals(area["portals"])
         link_navmesh_to_portals(area["navmesh"], area["portals"])
+
+    structure_meshes(data["meshes"])
 
 
 def structure_navmesh(obj):
@@ -160,6 +172,31 @@ def structure_portals(objs):
     return portals
 
 
+def structure_exports(objs_list, meshes):
+    exports = list()
+
+    for objs in objs_list:
+        for obj in objs:
+            if obj.type != "MESH":
+                continue
+
+            print(obj.data)
+        
+            exports.append({
+                "name": obj.name,
+                "transform": obj.matrix_world,
+                "mesh": obj.data.name,
+            })
+            meshes[obj.data.name] = obj.data
+
+    return exports
+
+
+def structure_meshes(meshes):
+    return meshes
+    
+
+
 def link_navmesh_to_portals(navmesh, portals):
     def in_bounds(p, b):
         return abs(p.x) <= b.x and abs(p.y) <= b.y and abs(p.z) <= b.z
@@ -190,13 +227,28 @@ def link_navmesh_to_portals(navmesh, portals):
                     edge["target"] = portal_i
 
 
-def export_areas(path, areas):
+def export_areas(path, data):
     INFO = "# io_kowl v{}.{}.{}\n".format(*VERSION)
     dirname = os.path.dirname(path)
-    for area in areas:
+    for area in data["areas"]:
         name = area["name"]
 
         # TODO Save area info
+
+        with open(os.path.join(dirname, name + ".xpt"), "w", encoding="utf8", newline="\n") as f:
+            fw = f.write
+
+            fw(INFO)
+            fw("# EXPORTS\n")
+            fw("\n")
+
+            fw("# [mesh name] [position] [rotation] [scale]\n")
+            for export in area["exports"]:
+                p, r, s = export["transform"].decompose()
+                fw("{} ".format(export["mesh"]))
+                fw("{},{},{} ".format(*p.to_tuple()))
+                fw("{},{},{},{} ".format(r.x, r.y, r.z, r.w))
+                fw("{},{},{}\n".format(*s.to_tuple()))
 
         with open(os.path.join(dirname, name + ".nav"), "w", encoding="utf8", newline="\n") as f:
             fw = f.write
@@ -204,7 +256,8 @@ def export_areas(path, areas):
             fw(INFO)
             fw("# NAVMESH\n")
             fw("\n")
-            
+
+            # TODO Don't export [index] if you don't use it
             fw("# [index] [to] [target] [points]\n")
             navmesh = area["navmesh"]
             for index, triangle in enumerate(navmesh["triangles"]):
@@ -216,7 +269,7 @@ def export_areas(path, areas):
                 fw("{},{},{} ".format(*tos))
                 fw("{},{},{} ".format(*targets))
                 fw("{} {} {}\n".format(*["{:.3f},{:.3f},{:.3f}".format(*x.to_tuple()) for x in vertices]))
-        
+
         with open(os.path.join(dirname, name + ".ptl"), "w", encoding="utf8", newline="\n") as f:
             fw = f.write
 
