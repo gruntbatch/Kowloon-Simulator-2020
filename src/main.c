@@ -1,3 +1,4 @@
+#include "area.h"
 #include "events.h"
 #include "GL_plus.h"
 #include "immediate.h"
@@ -190,12 +191,14 @@ static enum Continue loop(void) {
 				 LoadShader(GL_FRAGMENT_SHADER,
 					    FromBase("assets/shaders/vertex_color.frag")));
     Navmesh navmesh = LoadNavmesh(FromBase("assets/areas/alley_01"));
+    /* Navmesh navmesh = AreaNavmesh(area); */
     Agent agent = CreateAgent(navmesh);
 
-    /* GLuint64 vertex_array = rtGenVertexArray(); */
-    /* rtBindVertexArray(vertex_array); */
+    GLuint64 vertex_array = rtGenVertexArray();
+    rtBindVertexArray(vertex_array);
+    Area area = LoadArea(FromBase("assets/areas/alley_01"));
     /* GLuint64 mesh_id = rtLoadMesh(FromBase("assets/models/Floor13.anio")); */
-    /* rtFillBuffer(); */
+    rtFillBuffer();
 
     /* Initialize matrices */
     imModel(Matrix4(1));
@@ -276,7 +279,11 @@ static enum Continue loop(void) {
 
 	imDrawAgent(agent, 0.1);
 	imFlush();
+
 	glEnable(GL_DEPTH_TEST);
+	rtBindVertexArray(vertex_array);
+	DrawArea(area);
+	rtFlush();
 
 	/* Draw to default framebuffer */
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);

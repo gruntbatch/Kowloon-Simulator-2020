@@ -65,9 +65,9 @@ Navmesh LoadNavmesh(const char* filepath) {
     {
 	char nav_filepath[256] = { 0 };
 	strcpy(nav_filepath, filepath);
-	strcat(nav_filepath, ".nav");
+	strcat(nav_filepath, ".navmesh");
 
-	char * source = fopenstr(nav_filepath);
+	char* source = fopenstr(nav_filepath);
 	if (!source) {
 	    Warn("Unable to open `%s`. Does it exist?\n", nav_filepath);
 	    return MAX_NAVMESH_COUNT;
@@ -110,7 +110,7 @@ Navmesh LoadNavmesh(const char* filepath) {
     {
 	char ptl_filepath[256] = { 0 };
 	strcpy(ptl_filepath, filepath);
-	strcat(ptl_filepath, ".ptl");
+	strcat(ptl_filepath, ".portal_list");
 
 	char * source = fopenstr(ptl_filepath);
 	if (!source) {

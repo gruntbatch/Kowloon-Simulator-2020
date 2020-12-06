@@ -5,7 +5,10 @@
 #include "mathematics.h"
 
 
-GLuint64 rtLoadMesh(const char * filepath);
+GLuint64 rtLoadMeshAsset(const char* filepath);
+
+
+GLuint64 rtLoadMesh(const char* filepath);
 
 
 GLuint64 rtGenVertexArray(void);
