@@ -65,10 +65,7 @@ def parse_area(collection, area):
                 area.setdefault("portals", list()).append(child)
 
             elif token == "@export":
-                if child.instance_collection:
-                    area.setdefault("exports", list()).extend(child.instance_collection.objects)
-                else:
-                    area.setdefault("exports", list()).append(child)
+                area.setdefault("exports", list()).append(child)
 
             # elif token == "@var":
                 # area.setdefault("vars", dict()).setdefault(tokens.popleft(), list()).append([child])
@@ -85,11 +82,7 @@ def parse_area(collection, area):
                 break
 
             elif token == "@export":
-                for c in child.objects:
-                    if c.instance_collection:
-                        area.setdefault("exports", list()).extend(c.instance_collection.objects)
-                    else:
-                        area.setdefault("exports", list()).append(c)
+                area.setdefault("exports", list()).extend(child.objects)
 
             # elif token == "@var":
                 # area.setdefault("vars", dict()).setdefault(tokens.popleft(), list()).append(list(child.objects))
@@ -176,19 +169,26 @@ def structure_portals(objs):
     return portals
 
 
-def structure_exports(objs, meshes):
+def structure_exports(objs, lights, meshes):
     exports = list()
 
-    print("EXPORTS")
-    pprint.pprint(objs)
-    for obj in objs:
-        if obj.type == "MESH":
-            exports.append({
-                "name": obj.name,
-                "transform": obj.matrix_world,
-                "mesh": obj.data.name,
-            })
-            meshes[obj.data.name] = obj.data
+    def recurse(transform, children):
+        for child in children:
+            if child.type == "EMPTY":
+                if child.instance_collection:
+                    recurse(transform @ child.matrix_world, child.instance_collection.objects)
+
+            elif child.type == "MESH":
+                exports.append({
+                    "name": child.name,
+                    "transform": transform @ child.matrix_world,
+                    "mesh": child.data.name,
+                })
+                meshes[child.data.name] = child.data
+
+            recurse(transform, child.children)
+
+    recurse(mathutils.Matrix.Identity(4), objs)
 
     return exports
 
