@@ -5,7 +5,12 @@
 
 
 char * fopenstr(const char * filepath) {
-    FILE * f = fopen(filepath, "r");
+    /* So if I understand things right, we should open files in binary
+       mode, as the size difference between `\n` and `\r\n` will
+       affect how fseek reads the file; that is, on Windows, because
+       it expects newlines to be 2 bytes long, it will end up seeking
+       beyond the actual end of the file. */
+    FILE * f = fopen(filepath, "rb");
     if (!f) {
         return NULL;
     }
@@ -18,5 +23,6 @@ char * fopenstr(const char * filepath) {
     }
     buffer[length] = '\0';
     fclose(f);
+    printf("FOPENSTR %s >>>\n%s\n<<< FOPENSTR\n", filepath, buffer);
     return buffer;
 }
