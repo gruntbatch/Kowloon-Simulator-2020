@@ -6,8 +6,7 @@ TODO
   - Concrete details
   - Export models from blender
   - Asset pipeline needs improving
-  - I want a folder of binary assets that gets shared via dropbox
-  - and a folder for text assets that get comitted
+  - FPS walkaround
   - Build a map from navmesh parts
   - Establish some way of tying  together textures and meshes
   - Pathfinding
