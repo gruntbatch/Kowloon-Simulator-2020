@@ -241,7 +241,7 @@ def export_data(cooked_dir, data):
 
         # TODO Save area info
 
-        with open(os.path.join(dirname, name + ".scn"), "w", encoding="utf8", newline="\n") as f:
+        with open(os.path.join(dirname, name + ".scenery"), "w", encoding="utf8", newline="\n") as f:
             fw = f.write
 
             fw(INFO)
@@ -256,7 +256,7 @@ def export_data(cooked_dir, data):
                 fw("{},{},{},{} ".format(r.x, r.y, r.z, r.w))
                 fw("{},{},{}\n".format(*s.to_tuple()))
 
-        with open(os.path.join(dirname, name + ".nav"), "w", encoding="utf8", newline="\n") as f:
+        with open(os.path.join(dirname, name + ".navmesh"), "w", encoding="utf8", newline="\n") as f:
             fw = f.write
 
             fw(INFO)
@@ -274,7 +274,7 @@ def export_data(cooked_dir, data):
                 fw("{},{},{} ".format(*targets))
                 fw("{} {} {}\n".format(*["{:.3f},{:.3f},{:.3f}".format(*x.to_tuple()) for x in vertices]))
 
-        with open(os.path.join(dirname, name + ".ptl"), "w", encoding="utf8", newline="\n") as f:
+        with open(os.path.join(dirname, name + ".portal_list"), "w", encoding="utf8", newline="\n") as f:
             fw = f.write
 
             fw(INFO)
