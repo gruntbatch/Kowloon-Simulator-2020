@@ -169,7 +169,7 @@ def structure_portals(objs):
     return portals
 
 
-def structure_exports(objs, lights, meshes):
+def structure_exports(objs, meshes):
     exports = list()
 
     def recurse(transform, children):
