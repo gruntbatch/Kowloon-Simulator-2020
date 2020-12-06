@@ -23,6 +23,5 @@ char * fopenstr(const char * filepath) {
     }
     buffer[length] = '\0';
     fclose(f);
-    printf("FOPENSTR %s >>>\n%s\n<<< FOPENSTR\n", filepath, buffer);
     return buffer;
 }
