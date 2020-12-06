@@ -64,8 +64,8 @@ def parse_area(collection, area):
             elif token == "@portal":
                 area.setdefault("portals", list()).append(child)
 
-            elif token == "@export":
-                area.setdefault("exports", list()).append(child)
+            elif token == "@scenery":
+                area.setdefault("scenery", list()).append(child)
 
             # elif token == "@var":
                 # area.setdefault("vars", dict()).setdefault(tokens.popleft(), list()).append([child])
@@ -81,8 +81,8 @@ def parse_area(collection, area):
             if token == "@ignore":
                 break
 
-            elif token == "@export":
-                area.setdefault("exports", list()).extend(child.objects)
+            elif token == "@scenery":
+                area.setdefault("scenery", list()).extend(child.objects)
 
             # elif token == "@var":
                 # area.setdefault("vars", dict()).setdefault(tokens.popleft(), list()).append(list(child.objects))
@@ -107,7 +107,7 @@ def structure_data(data):
     data["meshes"] = dict()
     
     for area in data["areas"]:
-        area["exports"] = structure_exports(area.get("exports", list()), data["meshes"])
+        area["scenery"] = structure_scenery(area.get("scenery", list()), data["meshes"])
         area["navmesh"] = structure_navmesh(area["navmesh"])
         area["portals"] = structure_portals(area["portals"])
         link_navmesh_to_portals(area["navmesh"], area["portals"])
@@ -169,8 +169,8 @@ def structure_portals(objs):
     return portals
 
 
-def structure_exports(objs, meshes):
-    exports = list()
+def structure_scenery(objs, meshes):
+    scenery = list()
 
     def recurse(transform, children):
         for child in children:
@@ -179,7 +179,7 @@ def structure_exports(objs, meshes):
                     recurse(transform @ child.matrix_world, child.instance_collection.objects)
 
             elif child.type == "MESH":
-                exports.append({
+                scenery.append({
                     "name": child.name,
                     "transform": transform @ child.matrix_world,
                     "mesh": child.data.name,
@@ -190,7 +190,7 @@ def structure_exports(objs, meshes):
 
     recurse(mathutils.Matrix.Identity(4), objs)
 
-    return exports
+    return scenery
 
 
 def structure_meshes(meshes):
@@ -241,17 +241,17 @@ def export_data(cooked_dir, data):
 
         # TODO Save area info
 
-        with open(os.path.join(dirname, name + ".xpt"), "w", encoding="utf8", newline="\n") as f:
+        with open(os.path.join(dirname, name + ".scn"), "w", encoding="utf8", newline="\n") as f:
             fw = f.write
 
             fw(INFO)
-            fw("# EXPORTS\n")
+            fw("# SCENERY\n")
             fw("\n")
 
             fw("# [mesh name] [position] [rotation] [scale]\n")
-            for export in area["exports"]:
-                p, r, s = export["transform"].decompose()
-                fw("{} ".format(export["mesh"]))
+            for scenery in area["scenery"]:
+                p, r, s = scenery["transform"].decompose()
+                fw("{} ".format(scenery["mesh"]))
                 fw("{},{},{} ".format(*p.to_tuple()))
                 fw("{},{},{},{} ".format(r.x, r.y, r.z, r.w))
                 fw("{},{},{}\n".format(*s.to_tuple()))

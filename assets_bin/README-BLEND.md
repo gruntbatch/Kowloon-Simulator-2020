@@ -42,8 +42,8 @@ However, anything after the last required argument will be ignored:
   - You cannot nest `@areas`
   - Each `@area` must have a `@navmesh` and at least one `@portal`
   
-@export
--------
+@scenery
+--------
 
   - This item, and all of it's children, will be exported and saved
   - This will save instances of linked collections (!)
