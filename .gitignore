@@ -4,7 +4,8 @@
 
 *.pyc
 
-assets_bin/
+assets_bin/*
+!assets_bin/README-BLEND.md
 bin/
 build/
 lib/*

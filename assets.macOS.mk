@@ -1,5 +1,5 @@
 include assets.Config.mk
-BLENDER_MAC = $(BLENDER)/Contents/MacOS/Blender
+BLENDER_MACOS = $(BLENDER)/Contents/MacOS/Blender
 
 
 #
@@ -34,7 +34,7 @@ $(info $(ASSET_FILES))
 
 $(COOKED_DIR)/%.blend_sentinel: $(RAW_BIN_DIR)/%.blend tools/io_kowl/*.py
 	mkdir -p $(@D)
-	$(BLENDER_MAC) -b --factory-startup $< --python tools/io_kowl/area.py -- $(COOKED_DIR)
+	$(BLENDER_MACOS) -b --factory-startup $< --python tools/io_kowl/area.py -- $(COOKED_DIR)
 #	touch $@
 
 

@@ -71,3 +71,21 @@ For funsies, you can build the executable, process assets, and launch the game u
 If you need to clean things up:
 
 	make clean
+
+Asset Pipeline
+--------------
+
+To build all of the assets, call:
+
+    make assets
+
+Any assets that can be committed to Git should be placed in the `assets` folder. These are mostly text files, such as shaders or scripts. The contents of this folder are committed to and shared via the Git repository.
+
+Binary assets should go in the `assets_bin` filder. These files are shared using Google Drive or something better suited to handling binary assets. Files that should go here include basically everything that can't be edited in Notepad:
+
+  - `.blend`
+  - `.png`
+  - `.psd`
+  - etc.
+
+For further documentation on asset file types, look at the README files in `assets` and `assets_bin`.
