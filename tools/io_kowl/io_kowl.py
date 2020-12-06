@@ -257,15 +257,13 @@ def export_areas(path, data):
             fw("# NAVMESH\n")
             fw("\n")
 
-            # TODO Don't export [index] if you don't use it
-            fw("# [index] [to] [target] [points]\n")
+            fw("# [to] [target] [points]\n")
             navmesh = area["navmesh"]
-            for index, triangle in enumerate(navmesh["triangles"]):
+            for triangle in navmesh["triangles"]:
                 tos = [x["to"] for x in triangle]
                 targets = [x["target"] for x in triangle]
                 vertex_is = [x["vertex_i"] for x in triangle]
                 vertices = [navmesh["vertices"][i] for i in vertex_is]
-                fw("{} ".format(index))
                 fw("{},{},{} ".format(*tos))
                 fw("{},{},{} ".format(*targets))
                 fw("{} {} {}\n".format(*["{:.3f},{:.3f},{:.3f}".format(*x.to_tuple()) for x in vertices]))
@@ -277,10 +275,9 @@ def export_areas(path, data):
             fw("# PORTALS\n")
             fw("\n")
             
-            fw("# [index] [linked_triangle] [width] [position] [rotation]\n")
-            for index, portal in enumerate(area["portals"]):
+            fw("# [linked_triangle] [width] [position] [rotation]\n")
+            for portal in area["portals"]:
                 p, r, s = portal["transform"].decompose()
-                fw("{} ".format(index))
                 fw("{} ".format(portal["triangle"]))
                 fw("{} ".format(int(round(s.x))))
                 fw("{},{},{} ".format(*p.to_tuple()))

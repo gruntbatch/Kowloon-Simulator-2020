@@ -82,7 +82,6 @@ Navmesh LoadNavmesh(const char* filepath) {
 		struct Triangle t;
 
 		int s = sscanf(line,
-			       "%*i "
 			       "%d,%d,%d "
 			       "%d,%d,%d "
 			       "%f,%f,%f "
@@ -131,7 +130,6 @@ Navmesh LoadNavmesh(const char* filepath) {
 		union Quaternion rotation = { 0 };
 
 		int s = sscanf(line,
-			       "%*i "
 			       "%d %d "
 			       "%f,%f,%f "
 			       "%f,%f,%f,%f",
