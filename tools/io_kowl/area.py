@@ -9,6 +9,7 @@ from collections import deque
 import mathutils
 import mesh
 import os
+import pprint
 
 
 VERSION = (0, 1, 0)
@@ -64,7 +65,10 @@ def parse_area(collection, area):
                 area.setdefault("portals", list()).append(child)
 
             elif token == "@export":
-                area.setdefault("exports", list()).append([child])
+                if child.instance_collection:
+                    area.setdefault("exports", list()).extend(child.instance_collection.objects)
+                else:
+                    area.setdefault("exports", list()).append(child)
 
             # elif token == "@var":
                 # area.setdefault("vars", dict()).setdefault(tokens.popleft(), list()).append([child])
@@ -81,7 +85,11 @@ def parse_area(collection, area):
                 break
 
             elif token == "@export":
-                area.setdefault("exports", list()).append(list(child.objects))
+                for c in child.objects:
+                    if c.instance_collection:
+                        area.setdefault("exports", list()).extend(c.instance_collection.objects)
+                    else:
+                        area.setdefault("exports", list()).append(c)
 
             # elif token == "@var":
                 # area.setdefault("vars", dict()).setdefault(tokens.popleft(), list()).append(list(child.objects))
@@ -91,6 +99,10 @@ def parse_area(collection, area):
 
         else:
             parse_area(child, area)
+
+
+def parse_export():
+    pass
 
 
 def tokenize(children):
@@ -164,14 +176,13 @@ def structure_portals(objs):
     return portals
 
 
-def structure_exports(objs_list, meshes):
+def structure_exports(objs, meshes):
     exports = list()
 
-    for objs in objs_list:
-        for obj in objs:
-            if obj.type != "MESH":
-                continue
-
+    print("EXPORTS")
+    pprint.pprint(objs)
+    for obj in objs:
+        if obj.type == "MESH":
             exports.append({
                 "name": obj.name,
                 "transform": obj.matrix_world,
