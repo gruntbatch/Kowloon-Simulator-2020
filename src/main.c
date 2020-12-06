@@ -210,6 +210,8 @@ static enum Continue loop(void) {
     double current_time = GetPerformanceTime();
     double initial_time = current_time;
 
+    int trip = 0;
+
     while (!HasQuit()) {
 	double new_time = GetPerformanceTime();
 	double frame_time = new_time - current_time;
@@ -270,7 +272,7 @@ static enum Continue loop(void) {
 	imBindVertexArray();
 	imDrawNavmesh(navmesh);
 
-	MoveAgent(agent, GetMove(), delta_time);
+	MoveAgent(agent, GetMove(), frame_time);
 
 	imDrawAgent(agent, 0.1);
 	imFlush();
