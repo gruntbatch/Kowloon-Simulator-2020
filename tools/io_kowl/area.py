@@ -1,13 +1,17 @@
+if __name__ == "__main__" and __package__ is None:
+    import os
+    import sys
+    sys.path.append(os.path.dirname(__file__))
+
 import bmesh
 import bpy
-import bpy_extras
 from collections import deque
 import mathutils
+import mesh
 import os
-import pprint
 
 
-VERSION = (0, 0, 0)
+VERSION = (0, 1, 0)
 
 
 # These must be kept in sync with `Link` types in `navigation.c`
@@ -16,23 +20,11 @@ NEIGHBOR = 1
 PORTAL = 2
 
 
-class ExportArea(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
-    bl_idname = "kowl.export_map"
-    bl_label = "Export Kowl Area"
-
-    # Give the ExportHelper class a file extension to use
-    filename_ext = '.area'
-    filter_glob: bpy.props.StringProperty(default="*.area",
-                                          options={'HIDDEN'},
-                                          maxlen=255)
-
-    def execute(self, context):
-        data = dict()
-        parse_areas(context.scene.collection, data.setdefault("areas", list()))
-        structure_data(data)
-        pprint.pprint(data)
-        export_areas(self.filepath, data)
-        return {"FINISHED"}
+def export_area(cooked_dir):
+    data = dict()
+    parse_areas(bpy.context.scene.collection, data.setdefault("areas", list()))
+    structure_data(data)
+    export_data(cooked_dir, data)
 
 
 def parse_areas(collection, areas):
@@ -180,8 +172,6 @@ def structure_exports(objs_list, meshes):
             if obj.type != "MESH":
                 continue
 
-            print(obj.data)
-        
             exports.append({
                 "name": obj.name,
                 "transform": obj.matrix_world,
@@ -227,11 +217,16 @@ def link_navmesh_to_portals(navmesh, portals):
                     edge["target"] = portal_i
 
 
-def export_areas(path, data):
+def export_data(cooked_dir, data):
     INFO = "# io_kowl v{}.{}.{}\n".format(*VERSION)
-    dirname = os.path.dirname(path)
+
+    dirname = os.path.join(cooked_dir, "areas")
+    os.makedirs(dirname, exist_ok=True)
+
     for area in data["areas"]:
         name = area["name"]
+
+        print("Exporting {} ... ".format(name), end="")
 
         # TODO Save area info
 
@@ -282,3 +277,18 @@ def export_areas(path, data):
                 fw("{} ".format(int(round(s.x))))
                 fw("{},{},{} ".format(*p.to_tuple()))
                 fw("{},{},{},{}\n".format(r.x, r.y, r.z, r.w))
+
+        print("DONE")
+
+    dirname = os.path.join(cooked_dir, "meshes")
+    os.makedirs(dirname, exist_ok=True)
+
+    for name, mesh_ in data["meshes"].items():
+        print("Exporting {} ... ".format(name), end="")
+        mesh.export_mesh(mesh_, os.path.join(dirname, name + ".mesh"))
+        print("DONE")
+
+
+if __name__ == "__main__":
+    import sys
+    export_area(sys.argv[-1])
