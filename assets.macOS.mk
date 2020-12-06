@@ -29,13 +29,12 @@ ASSET_FILES += $(call raw_to_cooked,$(RAW_BIN_DIR),blend,$(COOKED_DIR),blend_sen
 ASSET_FILES += $(call raw_to_cooked,$(RAW_DIR),frag,$(COOKED_DIR),frag)
 ASSET_FILES += $(call raw_to_cooked,$(RAW_BIN_DIR),png,$(COOKED_DIR),png)
 ASSET_FILES += $(call raw_to_cooked,$(RAW_DIR),vert,$(COOKED_DIR),vert)
-$(info $(ASSET_FILES))
 
 
 $(COOKED_DIR)/%.blend_sentinel: $(RAW_BIN_DIR)/%.blend tools/io_kowl/*.py
 	mkdir -p $(@D)
 	$(BLENDER_MACOS) -b --factory-startup $< --python tools/io_kowl/area.py -- $(COOKED_DIR)
-#	touch $@
+	touch $@
 
 
 $(COOKED_DIR)/%.frag: $(RAW_DIR)/%.frag $(RAW_DIR)/shaders/*.glsl tools/glsl_includer.py
