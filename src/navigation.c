@@ -118,7 +118,7 @@ Navmesh LoadNavmesh(const char* filepath) {
 
 		int triangle = 0;
 		int width = 0;
-		union Vector3 position = { 0 };
+		union Vector3 position = { .x=0, .y=0, .z=0 };
 		union Quaternion rotation = { 0 };
 
 		int s = sscanf(line,

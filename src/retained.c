@@ -13,7 +13,7 @@ struct String_GLuint64_Pair {
 
 #define MAX_KV_COUNT 512
 static int kv_count = 0;
-static struct String_GLuint64_Pair kvs[MAX_KV_COUNT] = { 0 };
+static struct String_GLuint64_Pair kvs[MAX_KV_COUNT];
 
 
 GLuint64 rtLoadMeshAsset(const char* name) {
