@@ -5,6 +5,11 @@
 #include <stdarg.h>
 
 
+void LogVerbosely(void) {
+    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
+}
+
+
 static void logv(SDL_LogPriority priority, const char * fmt, va_list ap) {
     SDL_LogMessageV(SDL_LOG_CATEGORY_CUSTOM, priority, fmt, ap);
 }
