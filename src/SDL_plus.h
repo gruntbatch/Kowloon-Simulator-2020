@@ -15,5 +15,5 @@ int RememberBasePath(void);
 const char * FromBase(const char * filepath);
 
 
-/* int SDL_RememberPrefPath(void); */
+/* int RememberPrefPath(void); */
 /* const char * FromPref(const char * filepath); */

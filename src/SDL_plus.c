@@ -1,4 +1,7 @@
 #include "SDL_plus.h"
+
+
+#include "logger.h"
 #include <string.h>
 
 
@@ -17,6 +20,7 @@ int RememberBasePath(void) {
     char* temp = SDL_GetBasePath();
 
     if (!temp) {
+	Err("Couldn't get the base path because %s\n", SDL_GetError());
 	return SDL_ERR;
     }
     
