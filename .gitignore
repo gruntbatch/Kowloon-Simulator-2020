@@ -5,7 +5,8 @@
 *.pyc
 
 assets_bin/*
-!assets_bin/README-BLEND.md
+!assets_bin/*.md
+assets.Config.mk
 bin/
 build/
 lib/*
