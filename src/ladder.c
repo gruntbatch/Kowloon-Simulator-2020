@@ -1,6 +1,9 @@
 #include "ladder.h"
 
 
+#include "logger.h"
+
+
 struct Rung {
     Up up;
     Down down;
@@ -12,7 +15,7 @@ static int rung_count = 0;
 static struct Rung rungs[MAX_RUNG_COUNT];
 
 
-void AddRung(Up up, Down down) {
+void Rung(Up up, Down down) {
     if (rung_count < MAX_RUNG_COUNT) {
 	rungs[rung_count].up = up;
 	rungs[rung_count].down = down;
@@ -39,8 +42,8 @@ int Climb(void) {
 	    }
 	    rung--;
 	}
-	return 0;
     } else {
-	return -1;
+	Err("Too many rungs to climb\n");
     }
+    return ErrorCount();
 }

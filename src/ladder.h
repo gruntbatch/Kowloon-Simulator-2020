@@ -1,9 +1,12 @@
 #pragma once
 
 
+#include "SDL_plus.h"
+
+
 enum Continue {
-    DOWN,
-    UP,
+    DOWN = SDL_ERR,
+    UP = SDL_OK,
 };
 
 
@@ -11,5 +14,5 @@ typedef enum Continue (*Up)(void);
 typedef void (*Down)(void);
 
 
-void AddRung(Up up, Down down);
+void Rung(Up up, Down down);
 int Climb(void);
