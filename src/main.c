@@ -186,18 +186,17 @@ static enum Continue create_renderer(void) {
 }
 
 static enum Continue loop(void) {
-    GLuint program = LoadProgram(LoadShader(GL_VERTEX_SHADER,
-					    FromBase("assets/shaders/world_space.vert")),
-				 LoadShader(GL_FRAGMENT_SHADER,
-					    FromBase("assets/shaders/vertex_color.frag")));
+    GLuint vertex_color_program = LoadProgram(LoadShader(GL_VERTEX_SHADER,
+							 FromBase("assets/shaders/world_space.vert")),
+					      LoadShader(GL_FRAGMENT_SHADER,
+							 FromBase("assets/shaders/vertex_color.frag")));
+
     Navmesh navmesh = LoadNavmesh(FromBase("assets/areas/alley_01"));
-    /* Navmesh navmesh = AreaNavmesh(area); */
     Agent agent = CreateAgent(navmesh);
 
     GLuint64 vertex_array = rtGenVertexArray();
     rtBindVertexArray(vertex_array);
     Area area = LoadArea(FromBase("assets/areas/alley_01"));
-    /* GLuint64 mesh_id = rtLoadMesh(FromBase("assets/models/Floor13.anio")); */
     rtFillBuffer();
 
     /* Initialize matrices */
@@ -212,8 +211,6 @@ static enum Continue loop(void) {
 
     double current_time = GetPerformanceTime();
     double initial_time = current_time;
-
-    int trip = 0;
 
     while (!HasQuit()) {
 	double new_time = GetPerformanceTime();
@@ -237,86 +234,76 @@ static enum Continue loop(void) {
 	PollEvents();
 	
 	/* Draw to internal framebuffer */
-	glBindFramebuffer(GL_FRAMEBUFFER, internal.buffer);
-	glViewport(0, 0, internal.resolution.x, internal.resolution.y);
-	    
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	imModel(Matrix4(1));
-	imView(Matrix4(1));
-	imProjection(Orthographic(0, internal.resolution.x,
-				  0, internal.resolution.y,
-				  -1, 1));
-
-	imUseProgram(program);
-
-	imBindVertexArray();
-	imBegin(GL_TRIANGLES); {
-	    imColor3ub(25, 0, 0);
-	    imVertex2f(0, 0);
-
-	    imColor3ub(0, 25, 0);
-	    imVertex2f(internal.resolution.x / 2.0, internal.resolution.y);
-
-	    imColor3ub(0, 0, 25);
-	    imVertex2f(internal.resolution.x, 0);
-	} imEnd();
-	imFlush();
-
-	glClear(GL_DEPTH_BUFFER_BIT);
-
-	imModel(Matrix4(1));
-	imView(LookAt(Vector3(-10, -10, 10), Vector3(0, 0, 0), Vector3(0, 0, 1)));
-	/* TODO Use internal resolution to calculate aspect ratio */
-	imProjection(Perspective(90, 1280.0 / 720.0, 0.1, 100.0));
-
+	{
+	    glBindFramebuffer(GL_FRAMEBUFFER, internal.buffer);
+	    glViewport(0, 0, internal.resolution.x, internal.resolution.y);
 	
-	glDisable(GL_DEPTH_TEST);
-	imBindVertexArray();
-	imDrawNavmesh(navmesh);
+	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	MoveAgent(agent, GetMove(), frame_time);
+	    imModel(Matrix4(1));
+	    imView(LookAt(Vector3(-10, -10, 10), Vector3(0, 0, 0), Vector3(0, 0, 1)));
+	    /* TODO Use internal resolution to calculate aspect ratio */
+	    imProjection(Perspective(90, 1280.0 / 720.0, 0.1, 100.0));
 
-	imDrawAgent(agent, 0.1);
-	imFlush();
+	    imUseProgram(vertex_color_program);
 
-	glEnable(GL_DEPTH_TEST);
-	rtBindVertexArray(vertex_array);
-	DrawArea(area);
-	rtFlush();
+	    /* Draw the navigation mesh */
+	    {
+		glDisable(GL_DEPTH_TEST);
+		imBindVertexArray();
+		imDrawNavmesh(navmesh);
 
-	/* Draw to default framebuffer */
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glViewport(0, 0, 1280, 720);
+		MoveAgent(agent, GetMove(), frame_time);
+		
+		imDrawAgent(agent, 1.0);
+		imFlush();
+		glEnable(GL_DEPTH_TEST);
+	    }
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	    /* Draw the area */
+	    {
+		rtBindVertexArray(vertex_array);
+		DrawArea(area);
+		rtFlush();
+	    }
+	}
 
-	imModel(Matrix4(1));
-	imView(Matrix4(1));
-	imProjection(Orthographic(0, 1, 0, 1, -1, 1));
+	/* Draw to the window's default framebuffer */
+	{
+	    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	    glViewport(0, 0, 1280, 720);
 
-	imUseProgram(draw_buffer_program);
-	imBindTexture(GL_TEXTURE_2D, internal.color);
+	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	imBindVertexArray();
-	imBegin(GL_TRIANGLE_STRIP); {
-	    imColor3ub(0, 0, 0);
-	    imTexCoord2f(0, 0);
-	    imVertex2f(0, 0);
+	    imModel(Matrix4(1));
+	    imView(Matrix4(1));
+	    imProjection(Orthographic(0, 1, 0, 1, -1, 1));
 
-	    imColor3ub(255, 0, 0);
-	    imTexCoord2f(1, 0);
-	    imVertex2f(1, 0);
+	    imUseProgram(draw_buffer_program);
+	    imBindTexture(GL_TEXTURE_2D, internal.color);
 
-	    imColor3ub(0, 255, 0);
-	    imTexCoord2f(0, 1);
-	    imVertex2f(0, 1);
+	    /* Fill the screen with a single quad */
+	    imBindVertexArray();
+	    imBegin(GL_TRIANGLE_STRIP); {
+		imColor3ub(0, 0, 0);
+		imTexCoord2f(0, 0);
+		imVertex2f(0, 0);
 
-	    imColor3ub(0, 0, 255);
-	    imTexCoord2f(1, 1);
-	    imVertex2f(1, 1);
-	} imEnd();
-	imFlush();
+		imColor3ub(255, 0, 0);
+		imTexCoord2f(1, 0);
+		imVertex2f(1, 0);
+
+		imColor3ub(0, 255, 0);
+		imTexCoord2f(0, 1);
+		imVertex2f(0, 1);
+
+		imColor3ub(255, 255, 0);
+		imTexCoord2f(1, 1);
+		imVertex2f(1, 1);
+	    } imEnd();
+	    imFlush();
+	}
+	
 	glLogErrors();
 
 	SDL_GL_SwapWindow(window);

@@ -6,7 +6,8 @@ TODO
   - ~~Automatrically export meshes from Blender~~
   - ~~Achieve feature parity in asset pipeline~~
   - ~~Clean and tidy up der Zettelkästen~~
-  - Clean and tidy up `main.c`
+  - ~~Clean and tidy up `main.c`~~
+  - Extract magical navigation numbers into variables
   - Implement a first person walker
   - Implement a flyaround camera
   - Build a map from areas

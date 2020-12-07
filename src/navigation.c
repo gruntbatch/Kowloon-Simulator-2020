@@ -34,14 +34,6 @@ struct Portal {
 };
 
 
-static void draw_line(union Vector2 a, union Vector2 b) {
-    imBegin(GL_LINES); {
-	imVertex2(a);
-	imVertex2(b);
-    } imEnd();
-}
-
-
 #define MAX_TRIANGLE_COUNT 64
 #define MAX_PORTAL_COUNT 8
 
@@ -196,13 +188,6 @@ Agent CreateAgent(Navmesh navmesh_id) {
 void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
     struct Agent* agent = &agents[id];
     struct Navmesh navmesh = navmeshes[agent->navmesh];
-    struct {
-	GLubyte r, g, b;
-    } colors[3] = {
-	{ 255, 0, 0 },
-	{ 0, 255, 0 },
-	{ 0, 0, 255 },
-    };
 
     union Vector2 force = Vector2(0, 0);
 
