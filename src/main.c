@@ -1,5 +1,6 @@
 #include "area.h"
 #include "events.h"
+#include "framebuffer.h"
 #include "GL_plus.h"
 #include "immediate.h"
 #include "logger.h"
@@ -113,68 +114,13 @@ static void delete_gl_context(void) {
     }
 }
 
-struct Framebuffer {
-    union Vector2 resolution;
-    GLuint color;
-    GLuint depth;
-    GLuint buffer;
-};
-
 /* TODO Pick internal resolution based on user's resolution */
-static struct Framebuffer internal = { { .x=320, .y=240 } };
-
-static GLuint draw_buffer_program;
+static struct Framebuffer internal_framebuffer;
+static GLuint internal_framebuffer_program;
 
 static enum Continue create_renderer(void) {
-    glGenTextures(2, &internal.color);
-    glGenFramebuffers(1, &internal.buffer);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, internal.buffer); {
-	glBindTexture(GL_TEXTURE_2D, internal.color); {
-            glTexImage2D(GL_TEXTURE_2D,
-                         0, GL_RGB,
-                         internal.resolution.x, internal.resolution.y,
-                         0, GL_RGB,
-                         GL_UNSIGNED_BYTE,
-                         NULL);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        } glBindTexture(GL_TEXTURE_2D, 0);
-
-        glBindTexture(GL_TEXTURE_2D, internal.depth); {
-            glTexImage2D(GL_TEXTURE_2D,
-                         0, GL_DEPTH24_STENCIL8,
-                         internal.resolution.x, internal.resolution.y,
-                         0,
-                         GL_DEPTH_STENCIL,
-                         GL_UNSIGNED_INT_24_8,
-                         NULL);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);           
-        } glBindTexture(GL_TEXTURE_2D, 0);
-
-        glLogErrors();
-
-        glFramebufferTexture2D(GL_FRAMEBUFFER,
-                               GL_COLOR_ATTACHMENT0,
-                               GL_TEXTURE_2D,
-                               internal.color,
-                               0);
-
-        glFramebufferTexture2D(GL_FRAMEBUFFER,
-                               GL_DEPTH_STENCIL_ATTACHMENT,
-                               GL_TEXTURE_2D,
-                               internal.depth,
-                               0);
-
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER)
-            != GL_FRAMEBUFFER_COMPLETE) {
-            Err("Unable to complete internal framebuffer.\n");
-            return STOP;
-        }
-    } glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    draw_buffer_program = LoadProgram(LoadShader(GL_VERTEX_SHADER,
+    internal_framebuffer = CreateFramebuffer(320, 240);
+    internal_framebuffer_program = LoadProgram(LoadShader(GL_VERTEX_SHADER,
 						 FromBase("assets/shaders/world_space.vert")),
 				      LoadShader(GL_FRAGMENT_SHADER,
 						 FromBase("assets/shaders/draw_buffer.frag")));
@@ -235,8 +181,10 @@ static enum Continue loop(void) {
 	
 	/* Draw to internal framebuffer */
 	{
-	    glBindFramebuffer(GL_FRAMEBUFFER, internal.buffer);
-	    glViewport(0, 0, internal.resolution.x, internal.resolution.y);
+	    glBindFramebuffer(GL_FRAMEBUFFER, internal_framebuffer.buffer);
+	    glViewport(0, 0,
+		       internal_framebuffer.resolution.x,
+		       internal_framebuffer.resolution.y);
 	
 	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -279,8 +227,8 @@ static enum Continue loop(void) {
 	    imView(Matrix4(1));
 	    imProjection(Orthographic(0, 1, 0, 1, -1, 1));
 
-	    imUseProgram(draw_buffer_program);
-	    imBindTexture(GL_TEXTURE_2D, internal.color);
+	    imUseProgram(internal_framebuffer_program);
+	    imBindTexture(GL_TEXTURE_2D, internal_framebuffer.color);
 
 	    /* Fill the screen with a single quad */
 	    imBindVertexArray();
