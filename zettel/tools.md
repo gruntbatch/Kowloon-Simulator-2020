@@ -6,28 +6,22 @@ Programming extendable, future-proof tools is as hard as programming extendable,
 Meshes
 ------
 
-Extension: `.mes`
+Extension: `.mesh`
 
 Animated Meshes
 ---------------
 
-Extension: `.anm`
+Extension: `.animated_mesh`
 
 Brute force.
 
 Navigation Meshes
 -----------------
 
-Extension: `.nav`
-
-    {i} {links_to} {targets} {vertices}
+Extension: `.navmesh`
 
 Portal Map
 ----------
 
-Extension: `.ptl`
+Extension: `.portal_list`
 
-Area
-----
-
-Extension: `.are`
