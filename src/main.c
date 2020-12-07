@@ -3,38 +3,34 @@
 #include "framebuffer.h"
 #include "GL_plus.h"
 #include "immediate.h"
+#include "ladder.h"
 #include "logger.h"
 #include "navigation.h"
 #include "retained.h"
 #include "SDL_plus.h"
 
-enum Continue {
-    STOP,
-    GO,
-};
-
 static enum Continue log_verbosely(void) {
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
 
-    return GO;
+    return UP;
 }
 
 static enum Continue remember_filepaths(void) {
     if (RememberBasePath() != SDL_OK) {
 	Err("Unable to remember the base path because %s\n", SDL_GetError());
-	return STOP;
+	return DOWN;
     }
 
-    return GO;
+    return UP;
 }
 
 static enum Continue init_sdl(void) {
     if (SDL_Init(SDL_INIT_VIDEO) != SDL_OK) {
 	Err("Unable to initialize SDL because %s\n", SDL_GetError());
-	return STOP;
+	return DOWN;
     }
     
-    return GO;
+    return UP;
 }
 
 static void quit_sdl(void) {
@@ -52,7 +48,7 @@ static enum Continue set_gl_attributes(void) {
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-    return GO;
+    return UP;
 }
 
 static SDL_Window* window;
@@ -67,12 +63,12 @@ static enum Continue open_window(void) {
 
     if (!window) {
 	Err("Unable to open a window because %s\n", SDL_GetError());
-	return STOP;
+	return DOWN;
     }
 
     /* SDL_SetRelativeMouseMode(SDL_TRUE); */
 
-    return GO;
+    return UP;
 }
 
 static void close_window(void) {
@@ -89,13 +85,13 @@ static enum Continue create_gl_context(void) {
     if (!context) {
 	Err("Unable to create an OpenGL context because %s\n",
 	    SDL_GetError());
-	return STOP;
+	return DOWN;
     }
 
     GLenum err = glewInit();
     if (GLEW_OK != err) {
       Err("Unable to initialize GLEW because %s\n", glewGetErrorString(err));
-      return STOP;
+      return DOWN;
     }
 
     glEnable(GL_DEPTH_TEST);
@@ -105,7 +101,7 @@ static enum Continue create_gl_context(void) {
 
     glLogErrors();
 
-    return GO;
+    return UP;
 }
 
 static void delete_gl_context(void) {
@@ -128,7 +124,7 @@ static enum Continue create_renderer(void) {
     imInitTransformBuffer();
     imInitInternalVertexArray();
 
-    return GO;
+    return UP;
 }
 
 static enum Continue loop(void) {
@@ -266,42 +262,20 @@ static enum Continue loop(void) {
 	SDL_GL_SwapWindow(window);
     }
     
-    return STOP;
+    return UP;
 }   
 
-typedef enum Continue (*Up)(void);
-typedef void (*Down)(void);
-
-struct Rung {
-    Up up;
-    Down down;
-};
-
 int main(int argc, char* argv[]) {
-    struct Rung ladder[] = {{ .up=log_verbosely },
-			    { .up=remember_filepaths },
-			    { .up=init_sdl, .down=quit_sdl },
-			    { .up=set_gl_attributes },
-			    { .up=open_window, .down=close_window },
-			    { .up=create_gl_context, .down=delete_gl_context },
-			    { .up=create_renderer },
-			    { .up=loop }};
-    struct Rung* rung = ladder;
-
-    for (;;) {
-	if (rung->up && rung->up() == GO) {
-	    rung++;
-	} else {
-	    break;
-	}
+    AddRung(log_verbosely, NULL);
+    AddRung(remember_filepaths, NULL);
+    AddRung(init_sdl, quit_sdl);
+    AddRung(set_gl_attributes, NULL);
+    AddRung(open_window, close_window);
+    AddRung(create_gl_context, delete_gl_context);
+    AddRung(create_renderer, NULL);
+    AddRung(loop, NULL);
+    if (Climb() != 0) {
+	Err("Too many rungs to climb\n");
     }
-
-    for (; rung >= ladder;) {
-	if (rung->down) {
-	    rung->down();
-	}
-	rung--;
-    }
-
     return ErrorCount();
 }
