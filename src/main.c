@@ -9,20 +9,10 @@
 #include "retained.h"
 #include "SDL_plus.h"
 
-static enum Continue log_verbosely(void) {
-    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
+#define TITLE "Cyberpunk1997"
 
-    return UP;
-}
-
-static enum Continue remember_filepaths(void) {
-    if (RememberBasePath() != SDL_OK) {
-	Err("Unable to remember the base path because %s\n", SDL_GetError());
-	return DOWN;
-    }
-
-    return UP;
-}
+#define MAX_INTERNAL_WIDTH 480
+#define MAX_INTERNAL_HEIGHT 270
 
 static enum Continue init_sdl(void) {
     if (SDL_Init(SDL_INIT_VIDEO) != SDL_OK) {
@@ -51,14 +41,20 @@ static enum Continue set_gl_attributes(void) {
     return UP;
 }
 
+static union IVector2 resolution = { .x=1280, .y=720 };
+
+static float aspect_ratio(void) {
+    return (float) resolution.x / (float) resolution.y;
+}
+
 static SDL_Window* window;
 
 static enum Continue open_window(void) {
-    window = SDL_CreateWindow("a.out",
+    window = SDL_CreateWindow(TITLE,
 			      SDL_WINDOWPOS_CENTERED,
 			      SDL_WINDOWPOS_CENTERED,
-			      1280,
-			      720,
+			      resolution.x,
+			      resolution.y,
 			      SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
 
     if (!window) {
@@ -96,7 +92,7 @@ static enum Continue create_gl_context(void) {
 
     glEnable(GL_DEPTH_TEST);
 
-    glViewport(0, 0, 1280, 720);
+    glViewport(0, 0, resolution.x, resolution.y);
     glClearColor(0.1, 0.1, 0.1, 1.0);
 
     glLogErrors();
@@ -110,12 +106,29 @@ static void delete_gl_context(void) {
     }
 }
 
-/* TODO Pick internal resolution based on user's resolution */
+static union IVector2 internal_resolution;
+
+static union IVector2 calculate_internal_resolution(union IVector2 resolution) {
+    /* TODO Take fullscreen status and relative size of screen into account */
+    return IVector2(resolution.x / 4, resolution.y / 4);
+}
+
+static float internal_aspect_ratio(void) {
+    return (float) internal_resolution.x / (float) internal_resolution.y;
+}
+
 static struct Framebuffer internal_framebuffer;
 static GLuint internal_framebuffer_program;
 
 static enum Continue create_renderer(void) {
-    internal_framebuffer = CreateFramebuffer(320, 240);
+    internal_resolution = calculate_internal_resolution(resolution);
+    Log("For a resolution of %d by %d, the internal resolution is %d by %d\n",
+	resolution.x, resolution.y, internal_resolution.x, internal_resolution.y);
+
+    /* The internal framebuffer will never need to be bigger than 480
+       by 270, so we can create a framebuffer of that size and
+       modulate the viewport size */
+    internal_framebuffer = CreateFramebuffer(MAX_INTERNAL_WIDTH, MAX_INTERNAL_HEIGHT);
     internal_framebuffer_program = LoadProgram(LoadShader(GL_VERTEX_SHADER,
 							  FromBase("assets/shaders/world_space.vert")),
 					       LoadShader(GL_FRAGMENT_SHADER,
@@ -149,7 +162,7 @@ static enum Continue loop(void) {
     /* Initialize matrices */
     imModel(Matrix4(1));
     imView(Matrix4(1));
-    imProjection(Orthographic(0, 1280, 0, 720, -1, 1));
+    imProjection(Orthographic(0, resolution.x, 0, resolution.y, -1, 1));
 
     double delta_time = 1.0 / 30.0; /* TODO Replace with a constant */
 
@@ -184,17 +197,14 @@ static enum Continue loop(void) {
 	/* Draw to internal framebuffer */
 	{
 	    glBindFramebuffer(GL_FRAMEBUFFER, internal_framebuffer.buffer);
-	    glViewport(0, 0,
-		       internal_framebuffer.resolution.x,
-		       internal_framebuffer.resolution.y);
+	    glViewport(0, 0, internal_resolution.x, internal_resolution.y);
 	
 	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	    imView(LookAt(Vector3(10 * sinf(current_time / 10),
 				  10 * cosf(current_time / 10),
 				  10), Vector3(0, 0, 0), Vector3(0, 0, 1)));
-	    /* TODO Use internal resolution to calculate aspect ratio */
-	    imProjection(Perspective(90, 1280.0 / 720.0, 0.1, 100.0));
+	    imProjection(Perspective(90, internal_aspect_ratio(), 0.1, 100.0));
 
 	    /* Draw the area */
 	    imModel(Matrix4(1));
@@ -224,13 +234,15 @@ static enum Continue loop(void) {
 	/* Draw to the window's default framebuffer */
 	{
 	    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	    glViewport(0, 0, 1280, 720);
+	    glViewport(0, 0, resolution.x, resolution.y);
 
 	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	    imModel(Matrix4(1));
 	    imView(Matrix4(1));
-	    imProjection(Orthographic(0, 1, 0, 1, -1, 1));
+	    imProjection(Orthographic(0, internal_resolution.x,
+				      0, internal_resolution.y,
+				      -1, 1));
 
 	    imUseProgram(internal_framebuffer_program);
 	    imBindTexture(GL_TEXTURE_2D, internal_framebuffer.color);
@@ -244,15 +256,16 @@ static enum Continue loop(void) {
 
 		imColor3ub(255, 0, 0);
 		imTexCoord2f(1, 0);
-		imVertex2f(1, 0);
+		imVertex2f(internal_framebuffer.resolution.x, 0);
 
 		imColor3ub(0, 255, 0);
 		imTexCoord2f(0, 1);
-		imVertex2f(0, 1);
+		imVertex2f(0, internal_framebuffer.resolution.y);
 
 		imColor3ub(255, 255, 0);
 		imTexCoord2f(1, 1);
-		imVertex2f(1, 1);
+		imVertex2f(internal_framebuffer.resolution.x,
+			   internal_framebuffer.resolution.y);
 	    } imEnd();
 	    imFlush();
 	}
@@ -266,16 +279,13 @@ static enum Continue loop(void) {
 }   
 
 int main(int argc, char* argv[]) {
-    AddRung(log_verbosely, NULL);
-    AddRung(remember_filepaths, NULL);
-    AddRung(init_sdl, quit_sdl);
-    AddRung(set_gl_attributes, NULL);
-    AddRung(open_window, close_window);
-    AddRung(create_gl_context, delete_gl_context);
-    AddRung(create_renderer, NULL);
-    AddRung(loop, NULL);
-    if (Climb() != 0) {
-	Err("Too many rungs to climb\n");
-    }
-    return ErrorCount();
+    LogVerbosely();
+    Rung(RememberBasePath, NULL);
+    Rung(init_sdl, quit_sdl);
+    Rung(set_gl_attributes, NULL);
+    Rung(open_window, close_window);
+    Rung(create_gl_context, delete_gl_context);
+    Rung(create_renderer, NULL);
+    Rung(loop, NULL);
+    return Climb();
 }
