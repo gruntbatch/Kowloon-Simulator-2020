@@ -323,12 +323,19 @@ GLuint64 rtLoadMesh(const char * filepath) {
 		*endline = '\0';
 
 		union Vector3 position, normal;
+		union Vector2 uv;
 
-		if (sscanf(line,
-			   "%*i %f,%f,%f %f,%f,%f",
-			   &position.x, &position.y, &position.z,
-			   &normal.x, &normal.y, &normal.z) == 6) {
+		int s = sscanf(line,
+			       "%*i "
+			       "%f,%f,%f "
+			       "%f,%f,%f "
+			       "%f,%f",
+			       &position.x, &position.y, &position.z,
+			       &normal.x, &normal.y, &normal.z,
+			       &uv.u, &uv.v);
+		if (s == 8) {
 		    imNormal3(normal);
+		    imTexCoord(uv);
 		    imVertex3(position);
 		}
 
@@ -577,6 +584,40 @@ GLuint LoadProgram(GLuint vertex, GLuint fragment) {
                           MATRICES.bind);
 
     /* Check for errors after all of those OpenGL calls */
+    glLogErrors();
+
+    return id;
+}
+
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+GLuint LoadTexture(const char* filepath) {
+    stbi_set_flip_vertically_on_load(1);
+    int x, y, n;
+    unsigned char* data = stbi_load(filepath, &x, &y, &n, 0);
+
+    GLuint id;
+    glGenTextures(1, &id);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glTexImage2D(GL_TEXTURE_2D,
+		 0,
+		 (n == 3) ? GL_RGB : GL_RGBA,
+		 x,
+		 y,
+		 0,
+		 (n == 3) ? GL_RGB : GL_RGBA,
+		 GL_UNSIGNED_BYTE,
+		 data);
+
     glLogErrors();
 
     return id;

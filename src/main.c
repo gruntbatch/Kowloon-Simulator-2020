@@ -121,9 +121,9 @@ static GLuint internal_framebuffer_program;
 static enum Continue create_renderer(void) {
     internal_framebuffer = CreateFramebuffer(320, 240);
     internal_framebuffer_program = LoadProgram(LoadShader(GL_VERTEX_SHADER,
-						 FromBase("assets/shaders/world_space.vert")),
-				      LoadShader(GL_FRAGMENT_SHADER,
-						 FromBase("assets/shaders/draw_buffer.frag")));
+							  FromBase("assets/shaders/world_space.vert")),
+					       LoadShader(GL_FRAGMENT_SHADER,
+							  FromBase("assets/shaders/textured.frag")));
     
     imInitTransformBuffer();
     imInitInternalVertexArray();
@@ -139,7 +139,8 @@ static enum Continue loop(void) {
     GLuint little_light_program = LoadProgram(LoadShader(GL_VERTEX_SHADER,
 							 FromBase("assets/shaders/little_light.vert")),
 					      LoadShader(GL_FRAGMENT_SHADER,
-							 FromBase("assets/shaders/vertex_color.frag")));
+							 FromBase("assets/shaders/textured_vertex_color.frag")));
+    GLuint atlas_texture = LoadTexture(FromBase("assets/textures/atlas.png"));
 
     Navmesh navmesh = LoadNavmesh(FromBase("assets/areas/alley_01"));
     Agent agent = CreateAgent(navmesh);
@@ -203,6 +204,7 @@ static enum Continue loop(void) {
 	    imModel(Matrix4(1));
 
 	    imUseProgram(little_light_program);
+	    imBindTexture(GL_TEXTURE_2D, atlas_texture);
 
 	    {
 		rtBindVertexArray(vertex_array);

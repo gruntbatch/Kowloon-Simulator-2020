@@ -27,10 +27,12 @@ def gather_vertices(mesh):
     for face, index in face_index_pairs:
         v = [mesh.vertices[v].co for v in face.vertices]
         loops = mesh.loops
+        uv_layer = mesh.uv_layers.active.data
         n = [(loops[l_idx].normal.x, loops[l_idx].normal.y, loops[l_idx].normal.z) for l_idx in face.loop_indices]
+        u = [(uv_layer[l_idx].uv.x, uv_layer[l_idx].uv.y) for l_idx in face.loop_indices]
 
-        for v, n in zip(v, n):
-            vertices.append({'v': v, 'n': n})
+        for v, n, u in zip(v, n, u):
+            vertices.append({'v': v, 'n': n, 'u': u})
 
     return vertices
 
@@ -49,4 +51,7 @@ def write_data(vertices, filepath):
         fw('\n')
 
         for i, v in enumerate(vertices):
-            fw('{} {},{},{} {},{},{}\n'.format(i, *v['v'], *v['n']))
+            fw('{} '.format(i))
+            fw("{},{},{} ".format(*v["v"]))
+            fw('{},{},{} '.format(*v['n']))
+            fw("{},{}\n".format(*v["u"]))

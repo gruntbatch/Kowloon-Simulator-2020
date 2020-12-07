@@ -53,5 +53,6 @@ void imVertex3f(GLfloat x, GLfloat y, GLfloat z);
 void imFlush(void);
 
 
-GLuint LoadShader(GLenum type, const char * filepath);
+GLuint LoadShader(GLenum type, const char* filepath);
 GLuint LoadProgram(GLuint vertex, GLuint fragment);
+GLuint LoadTexture(const char* filepath);

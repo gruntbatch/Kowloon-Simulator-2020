@@ -2,6 +2,8 @@ TODO
 ====
 
   - ~~Render using some rudimentary lighting shader~~
+  - ~~Apply an atlas texture to scenery~~
+  - Load arbitrary areas using command line arguments
   - Add `@glow` support to the export script
   - Extract magical navigation numbers into variables
   - Implement a first person walker
