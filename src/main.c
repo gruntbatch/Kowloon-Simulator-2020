@@ -136,6 +136,10 @@ static enum Continue loop(void) {
 							 FromBase("assets/shaders/world_space.vert")),
 					      LoadShader(GL_FRAGMENT_SHADER,
 							 FromBase("assets/shaders/vertex_color.frag")));
+    GLuint little_light_program = LoadProgram(LoadShader(GL_VERTEX_SHADER,
+							 FromBase("assets/shaders/little_light.vert")),
+					      LoadShader(GL_FRAGMENT_SHADER,
+							 FromBase("assets/shaders/vertex_color.frag")));
 
     Navmesh navmesh = LoadNavmesh(FromBase("assets/areas/alley_01"));
     Agent agent = CreateAgent(navmesh);
@@ -168,7 +172,8 @@ static enum Continue loop(void) {
 	accumulator += frame_time;
 
 	while (accumulator >= delta_time) {
-	    /* TODO Call fixed update functions */
+	    /* Call fixed update functions */
+	    MoveAgent(agent, GetMove(), delta_time);
 
 	    time += delta_time;
 	    accumulator -= delta_time;
@@ -188,31 +193,33 @@ static enum Continue loop(void) {
 	
 	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	    imModel(Matrix4(1));
-	    imView(LookAt(Vector3(-10, -10, 10), Vector3(0, 0, 0), Vector3(0, 0, 1)));
+	    imView(LookAt(Vector3(10 * sinf(current_time / 10),
+				  10 * cosf(current_time / 10),
+				  10), Vector3(0, 0, 0), Vector3(0, 0, 1)));
 	    /* TODO Use internal resolution to calculate aspect ratio */
 	    imProjection(Perspective(90, 1280.0 / 720.0, 0.1, 100.0));
 
-	    imUseProgram(vertex_color_program);
-
-	    /* Draw the navigation mesh */
-	    {
-		glDisable(GL_DEPTH_TEST);
-		imBindVertexArray();
-		imDrawNavmesh(navmesh);
-
-		MoveAgent(agent, GetMove(), frame_time);
-		
-		imDrawAgent(agent, 1.0);
-		imFlush();
-		glEnable(GL_DEPTH_TEST);
-	    }
-
 	    /* Draw the area */
+	    imModel(Matrix4(1));
+
+	    imUseProgram(little_light_program);
+
 	    {
 		rtBindVertexArray(vertex_array);
 		DrawArea(area);
 		rtFlush();
+	    }
+	    
+	    /* Draw the navigation mesh */
+	    imUseProgram(vertex_color_program);
+
+	    {
+		glDepthMask(GL_FALSE);
+		imBindVertexArray();
+		imDrawNavmesh(navmesh);
+		imDrawAgent(agent, 1.0);
+		imFlush();
+		glDepthMask(GL_TRUE);
 	    }
 	}
 

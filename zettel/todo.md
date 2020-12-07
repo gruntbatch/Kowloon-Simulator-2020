@@ -1,12 +1,8 @@
 TODO
 ====
 
-  - ~~Get builds working on David's machine~~
-  - ~~Improve and document tagging syntax~~
-  - ~~Automatrically export meshes from Blender~~
-  - ~~Achieve feature parity in asset pipeline~~
-  - ~~Clean and tidy up der Zettelkästen~~
-  - ~~Clean and tidy up `main.c`~~
+  - ~~Render using some rudimentary lighting shader~~
+  - Add `@glow` support to the export script
   - Extract magical navigation numbers into variables
   - Implement a first person walker
   - Implement a flyaround camera

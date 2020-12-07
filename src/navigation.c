@@ -276,6 +276,7 @@ void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
 
 void imDrawNavmesh(Navmesh id) {
     struct Navmesh navmesh = navmeshes[id];
+    imModel(Matrix4(1));
     imColor3ub(100, 50, 0);
     for (int i=0; i<navmesh.triangle_count; ++i) {
 	struct Triangle t = navmesh.triangles[i];
