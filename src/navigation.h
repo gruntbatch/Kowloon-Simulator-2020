@@ -12,6 +12,7 @@ Navmesh LoadNavmesh(const char* filepath);
 typedef u32 Agent;
 Agent CreateAgent(Navmesh navmesh);
 void MoveAgent(Agent agent, union Vector2 goal, float delta_time);
+union Vector3 GetAgentPosition(Agent agent);
 
 
 void imDrawNavmesh(Navmesh navmesh);

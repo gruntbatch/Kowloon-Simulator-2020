@@ -274,6 +274,18 @@ void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
 }
 
 
+union Vector3 GetAgentPosition(Agent id) {
+    struct Agent agent = agents[id];
+    struct Navmesh navmesh = navmeshes[agent.navmesh];
+    struct Triangle triangle = navmesh.triangles[agent.triangle];
+
+    return From2To3(agent.position,
+		    triangle.triangle.a,
+		    triangle.triangle.b,
+		    triangle.triangle.c);
+}
+
+
 void imDrawNavmesh(Navmesh id) {
     struct Navmesh navmesh = navmeshes[id];
     imModel(Matrix4(1));

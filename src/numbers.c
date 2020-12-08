@@ -14,7 +14,7 @@ f32 to_degrees(f32 radians) {
 }
 
 
-f32 clampf(f32 f, f32 min, f32 max) {
+f32 clampf(f32 min, f32 f, f32 max) {
     const f32 t = (f < min) ? min : f;
     return (t > max) ? max : t;
 }

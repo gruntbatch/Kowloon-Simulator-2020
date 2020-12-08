@@ -52,7 +52,7 @@ f32 to_radians(f32 degrees);
 f32 to_degrees(f32 radians);
 
 
-f32 clampf(f32 f, f32 min, f32 max);
+f32 clampf(f32 min, f32 f, f32 max);
 
 
 f32 lerpf(f32 a, f32 b, f32 f);

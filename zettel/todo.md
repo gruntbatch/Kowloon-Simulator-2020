@@ -6,10 +6,10 @@ TODO
   - ~~Adopt a ladder planner mechanism~~
   - ~~Set resolution from command line~~
   - ~~Set fullscreen from command line~~
-  - Load arbitrary areas using command line arguments
+  - ~~Load arbitrary areas using command line arguments~~
   - Add `@glow` support to the export script
   - Extract magical navigation numbers into variables
-  - Implement a first person walker
+  - ~~Implement a first person walker~~
   - Implement a flyaround camera
   - Build a map from areas
   - Render textured areas

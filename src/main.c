@@ -18,6 +18,8 @@
 #define DEFAULT_WINDOW_WIDTH 1280
 #define DEFAULT_WINDOW_HEIGHT 720
 
+#define EYE_HEIGHT 1.70
+
 static enum Continue init_sdl(void) {
     if (SDL_Init(SDL_INIT_VIDEO) != SDL_OK) {
 	Err("Unable to initialize SDL because %s\n", SDL_GetError());
@@ -72,7 +74,7 @@ static enum Continue open_window(void) {
 	return DOWN;
     }
 
-    /* SDL_SetRelativeMouseMode(SDL_TRUE); */
+    SDL_SetRelativeMouseMode(SDL_TRUE);
 
     return UP;
 }
@@ -147,6 +149,32 @@ static enum Continue create_renderer(void) {
     return UP;
 }
 
+#define MOUSE_SPEED_X 5.0f
+#define MOUSE_SPEED_Y 5.0f
+#define MOVEMENT_SPEED 5.0f
+static Agent player;
+static union Matrix4 player_view;
+
+static void walkabout(double dt) {
+    static float pitch = -90.0f;
+    static float yaw = 0.0f;
+
+    union Vector2 look = GetLook();
+    pitch += look.y * MOUSE_SPEED_Y * dt;
+    pitch = clampf(-160.0f, pitch, -20.f);
+
+    yaw += look.x * MOUSE_SPEED_X * dt;
+
+    union Matrix4 yaw_matrix = Rotation(AxisAngle(Vector3(0, 0, 1), to_radians(yaw)));
+    union Vector2 movement = GetMove();
+    movement = Transform4(InvertM4(yaw_matrix),
+			  Vector4(movement.x, movement.y, 0, 1)).xy;
+
+    MoveAgent(player, movement, dt);
+    player_view = MulM4(Rotation(MulQ(AxisAngle(Vector3(1, 0, 0), to_radians(pitch)),
+				      AxisAngle(Vector3(0, 0, 1), to_radians(yaw)))),
+			InvertM4(Translation(Add3(GetAgentPosition(player), Vector3(0, 0, EYE_HEIGHT)))));
+}
 
 static char* area_to_load;
 
@@ -162,7 +190,8 @@ static enum Continue loop(void) {
     }
     
     Navmesh navmesh = LoadNavmesh(FromBase(area_to_load));
-    Agent agent = CreateAgent(navmesh);
+    Agent player = CreateAgent(navmesh);
+    walkabout(0);
 
     GLuint64 vertex_array = rtGenVertexArray();
     rtBindVertexArray(vertex_array);
@@ -193,7 +222,7 @@ static enum Continue loop(void) {
 
 	while (accumulator >= delta_time) {
 	    /* Call fixed update functions */
-	    MoveAgent(agent, GetMove(), delta_time);
+	    walkabout(delta_time);
 
 	    time += delta_time;
 	    accumulator -= delta_time;
@@ -211,9 +240,13 @@ static enum Continue loop(void) {
 	
 	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	    imView(LookAt(Vector3(10 * sinf(current_time / 10),
-				  10 * cosf(current_time / 10),
-				  10), Vector3(0, 0, 0), Vector3(0, 0, 1)));
+	    /* imView(LookAt(Vector3(10 * sinf(current_time / 10), */
+				  /* 10 * cosf(current_time / 10), */
+				  /* 10), Vector3(0, 0, 0), Vector3(0, 0, 1))); */
+	    /* union Vector3 position = GetAgentPosition(agent); */
+	    /* position = Add3(position, Vector3(0, 0, EYE_HEIGHT)); */
+	    /* imView(LookAt(position, Vector3(0, 0, 0), Vector3(0, 0, 1))); */
+	    imView(player_view);
 	    imProjection(Perspective(90, internal_aspect_ratio(), 0.1, 100.0));
 
 	    /* Draw the area */
@@ -235,7 +268,7 @@ static enum Continue loop(void) {
 		glDepthMask(GL_FALSE);
 		imBindVertexArray();
 		imDrawNavmesh(navmesh);
-		imDrawAgent(agent, 1.0);
+		imDrawAgent(player, 1.0);
 		imFlush();
 		glDepthMask(GL_TRUE);
 	    }
