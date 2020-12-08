@@ -11,9 +11,11 @@ double GetPerformanceTime(void) {
 }
 
 
+#define MAX_FILEPATH_COUNT 4
 #define MAX_FILEPATH_LEN 256
-static char base_filepath[MAX_FILEPATH_LEN];
-static char* base_filepath_end;
+static int base_filepath_index = 0;
+static char base_filepaths[MAX_FILEPATH_COUNT][MAX_FILEPATH_LEN];
+static int base_filepath_len;
 
 
 int RememberBasePath(void) {
@@ -23,18 +25,21 @@ int RememberBasePath(void) {
 	Err("Couldn't get the base path because %s\n", SDL_GetError());
 	return SDL_ERR;
     }
-    
-    strcpy(base_filepath, temp);
+
+    for (int i=0; i<MAX_FILEPATH_COUNT; i++) {
+	strcpy(base_filepaths[i], temp);
+    }
+    base_filepath_len = strlen(temp);
     SDL_free(temp);
-    base_filepath_end = base_filepath + strlen(base_filepath);
     return SDL_OK;
 }
 
 
 const char * FromBase(const char * filepath) {
-    *base_filepath_end = '\0';
-    strcat(base_filepath, filepath);
-    return base_filepath;
+    base_filepath_index = base_filepath_index % 4;
+    base_filepaths[base_filepath_index][base_filepath_len] = '\0';
+    strcat(base_filepaths[base_filepath_index], filepath);
+    return base_filepaths[base_filepath_index++];
 }
 
 
