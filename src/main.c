@@ -147,6 +147,9 @@ static enum Continue create_renderer(void) {
     return UP;
 }
 
+
+static char* area_to_load;
+
 static enum Continue loop(void) {
     GLuint vertex_color_program = LoadProgram(FromBase("assets/shaders/world_space.vert"),
 					      FromBase("assets/shaders/vertex_color.frag"));
@@ -154,14 +157,18 @@ static enum Continue loop(void) {
 					      FromBase("assets/shaders/textured_vertex_color.frag"));
     GLuint atlas_texture = LoadTexture(FromBase("assets/textures/atlas.png"));
 
-    Navmesh navmesh = LoadNavmesh(FromBase("assets/areas/alley_01"));
+    if (!area_to_load) {
+	return DOWN;
+    }
+    
+    Navmesh navmesh = LoadNavmesh(FromBase(area_to_load));
     Agent agent = CreateAgent(navmesh);
 
     GLuint64 vertex_array = rtGenVertexArray();
     rtBindVertexArray(vertex_array);
-    Area area = LoadArea(FromBase("assets/areas/alley_01"));
+    Area area = LoadArea(FromBase(area_to_load));
     rtFillBuffer();
-
+    
     /* Initialize matrices */
     imModel(Matrix4(1));
     imView(Matrix4(1));
@@ -312,6 +319,12 @@ int main(int rgc, char* argv[]) {
     
     Rung(create_gl_context, delete_gl_context);
     Rung(create_renderer, NULL);
+
+    {
+	if (got_strings(argv, "--area", 1, &area_to_load) == 1) {
+	}
+    }
+    
     Rung(loop, NULL);
     return Climb();
 }
