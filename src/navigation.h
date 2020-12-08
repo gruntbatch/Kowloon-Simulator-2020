@@ -1,19 +1,22 @@
 #pragma once
 
 
+#include "area.h"
 #include "mathematics.h"
 #include "numbers.h"
 
 
-typedef u32 Navmesh;
-Navmesh LoadNavmesh(const char* filepath);
+void LoadNavmesh(Area area, const char* filepath);
+void DrawNavmesh(Area navmesh);
+
+
+void LoadPortals(Area area, const char* filepath);
+void DrawPortals(Area portals);
 
 
 typedef u32 Agent;
-Agent CreateAgent(Navmesh navmesh);
+Agent CreateAgent(void);
+void PlaceAgent(Agent agent, Area area);
 void MoveAgent(Agent agent, union Vector2 goal, float delta_time);
 union Vector3 GetAgentPosition(Agent agent);
-
-
-void imDrawNavmesh(Navmesh navmesh);
-void imDrawAgent(Agent agent, float radius);
+void DrawAgent(Agent agent, float radius);

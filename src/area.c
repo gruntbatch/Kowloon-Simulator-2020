@@ -1,10 +1,43 @@
 #include "area.h"
 #include "immediate.h"
 #include "logger.h"
+#include "navigation.h"
 #include "retained.h"
+#include "SDL_plus.h"
 #include <stdio.h>
 #include <stdlib_plus.h>
 #include <string.h>
+
+
+Area area_count = 0;
+
+
+Area LoadArea(const char* filepath) {
+    Area id = area_count++;
+
+    {
+	char navmesh_filepath[256] = { 0 };
+	strcpy(navmesh_filepath, filepath);
+	strcat(navmesh_filepath, ".navmesh");
+	LoadNavmesh(id, FromBase(navmesh_filepath));
+    }
+
+    {
+	char portals_filepath[256] = { 0 };
+	strcpy(portals_filepath, filepath);
+	strcat(portals_filepath, ".portals");
+	LoadPortals(id, FromBase(portals_filepath));
+    }
+
+    {
+	char scenery_filepath[256] = { 0 };
+	strcpy(scenery_filepath, filepath);
+	strcat(scenery_filepath, ".scenery");
+	LoadScenery(id, FromBase(scenery_filepath));
+    }
+
+    return id;
+}
 
 
 struct Static {
@@ -14,81 +47,67 @@ struct Static {
 
 
 #define MAX_STATIC_COUNT 128
-
-
-struct Area {
-    int scenery_count;
-    struct Static scenery[MAX_STATIC_COUNT];
+struct Scenery {
+    int static_count;
+    struct Static statics[MAX_STATIC_COUNT];
 };
 
 
-#define MAX_AREA_COUNT 128
-static Area area_count = 0;
-static struct Area areas[MAX_AREA_COUNT] = { 0 };
+static struct Scenery sceneries[MAX_AREA_COUNT];
 
 
-Area LoadArea(const char* filepath) {
-    struct Area area = { 0 };
-
-    {
-	char xpt_filepath[256] = { 0 };
-	strcpy(xpt_filepath, filepath);
-	strcat(xpt_filepath, ".scenery");
-
-	char* source = fopenstr(xpt_filepath);
-	if (!source) {
-	    Warn("Unable to open `%s`. Does it exist?\n", xpt_filepath);
-	    return MAX_AREA_COUNT;
-	}
-
-	char* line = source;
-	while (line) {
-	    char * endline = strchr(line, '\n');
-	    if (endline) {
-		*endline = '\0';
-
-		char mesh_name[32];
-
-		union Vector3 translation;
-		union Quaternion rotation;
-		union Vector3 scale;
-
-		int s = sscanf(line,
-			       "%s "
-			       "%f,%f,%f "
-			       "%f,%f,%f,%f "
-			       "%f,%f,%f",
-			       mesh_name,
-			       &translation.x, &translation.y, &translation.z,
-			       &rotation.x, &rotation.y, &rotation.z, &rotation.w,
-			       &scale.x, &scale.y, &scale.z);
-
-		if (s == 11) {
-		    /* Log("Looking for mesh `%s`\n", mesh_name); */
-		    struct Static* s = &area.scenery[area.scenery_count++];
-		    s->transform = Transformation(translation, rotation, scale);
-		    s->mesh = rtLoadMeshAsset(mesh_name);
-		}
-
-		line = endline + 1;
-	    } else {
-		line = NULL;
-	    }
-	}
-
-	free(source);
+void LoadScenery(Area id, const char* filepath) {
+    char* source = fopenstr(filepath);
+    if (!source) {
+	Warn("Unable to open `%s`. Does it exist?\n", filepath);
+	return;
     }
 
-    Area id = area_count++;
-    areas[id] = area;
-    return 0;
+    struct Scenery* scenery = &sceneries[id];
+
+    char* line = source;
+    while (line) {
+	char * endline = strchr(line, '\n');
+	if (endline) {
+	    *endline = '\0';
+	    
+	    char mesh_name[32];
+	    
+	    union Vector3 translation;
+	    union Quaternion rotation;
+	    union Vector3 scale;
+	    
+	    int s = sscanf(line,
+			   "%s "
+			   "%f,%f,%f "
+			   "%f,%f,%f,%f "
+			   "%f,%f,%f",
+			   mesh_name,
+			   &translation.x, &translation.y, &translation.z,
+			   &rotation.x, &rotation.y, &rotation.z, &rotation.w,
+			   &scale.x, &scale.y, &scale.z);
+	    
+	    if (s == 11) {
+		/* Log("Looking for mesh `%s`\n", mesh_name); */
+		struct Static* s = &scenery->statics[scenery->static_count++];
+		s->transform = Transformation(translation, rotation, scale);
+		s->mesh = rtLoadMeshAsset(mesh_name);
+	    }
+
+	    line = endline + 1;
+	} else {
+	    line = NULL;
+	}
+    }
+    
+    free(source);
 }
 
 
-void DrawArea(Area id) {
-    struct Area area = areas[id];
-    for (int i=0; i<area.scenery_count; ++i) {
-	struct Static s = area.scenery[i];
+void DrawScenery(Area id) {
+    struct Scenery scenery = sceneries[id];
+    for (int i=0; i<scenery.static_count; ++i) {
+	struct Static s = scenery.statics[i];
 	imModel(s.transform);
 	rtDrawArrays(GL_TRIANGLES, s.mesh);
     }

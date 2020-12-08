@@ -198,15 +198,15 @@ static enum Continue loop(void) {
     if (!area_to_load) {
 	return DOWN;
     }
-    
-    Navmesh navmesh = LoadNavmesh(FromBase(area_to_load));
-    Agent player = CreateAgent(navmesh);
-    walkabout(0);
 
     GLuint64 vertex_array = rtGenVertexArray();
     rtBindVertexArray(vertex_array);
-    Area area = LoadArea(FromBase(area_to_load));
+    Area area = LoadArea(area_to_load);
     rtFillBuffer();
+
+    player = CreateAgent();
+    PlaceAgent(player, area);
+    walkabout(0);
     
     /* Initialize matrices */
     imModel(Matrix4(1));
@@ -261,7 +261,7 @@ static enum Continue loop(void) {
 
 	    {
 		rtBindVertexArray(vertex_array);
-		DrawArea(area);
+		DrawScenery(area);
 		rtFlush();
 	    }
 	    
@@ -271,8 +271,9 @@ static enum Continue loop(void) {
 	    {
 		glDepthMask(GL_FALSE);
 		imBindVertexArray();
-		imDrawNavmesh(navmesh);
-		imDrawAgent(player, 1.0);
+		DrawNavmesh(area);
+		DrawPortals(area);
+		DrawAgent(player, 1.0);
 		imFlush();
 		glDepthMask(GL_TRUE);
 	    }
