@@ -12,13 +12,23 @@
 
 #define TITLE "Cyberpunk1997"
 
+/* Resolution stuff */
+#define TARGET_INTERNAL_HEIGHT 240
+
 #define MAX_INTERNAL_WIDTH 480
 #define MAX_INTERNAL_HEIGHT 270
 
 #define DEFAULT_WINDOW_WIDTH 1280
 #define DEFAULT_WINDOW_HEIGHT 720
 
+/* Player stuff */
 #define EYE_HEIGHT 1.70
+
+/* TODO Mouse sensitivity should be set via user preferences */
+#define MOUSE_SPEED_X 5.0f
+#define MOUSE_SPEED_Y 5.0f
+
+#define MOVEMENT_SPEED 5.0f
 
 static enum Continue init_sdl(void) {
     if (SDL_Init(SDL_INIT_VIDEO) != SDL_OK) {
@@ -120,8 +130,8 @@ static void delete_gl_context(void) {
 static union IVector2 INTERNAL_RESOLUTION;
 
 static union IVector2 calculate_internal_resolution(union IVector2 resolution) {
-    /* TODO Take fullscreen status and relative size of screen into account */
-    return IVector2((float)resolution.x / 4.5, (float)resolution.y / 4.5);
+    float divisor = (float)resolution.y / (float)TARGET_INTERNAL_HEIGHT;
+    return IVector2((float)resolution.x / divisor, (float)resolution.y / divisor);
 }
 
 static float internal_aspect_ratio(void) {
@@ -149,9 +159,6 @@ static enum Continue create_renderer(void) {
     return UP;
 }
 
-#define MOUSE_SPEED_X 5.0f
-#define MOUSE_SPEED_Y 5.0f
-#define MOVEMENT_SPEED 5.0f
 static Agent player;
 static union Matrix4 player_view;
 
