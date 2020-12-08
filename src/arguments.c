@@ -2,8 +2,8 @@
 
 
 #include "logger.h"
-#include "stdlib_plus.h"
 #include <string.h>
+#include <stdio.h>
 
 
 static int get_index(char* argv[], const char* flag) {
@@ -30,7 +30,9 @@ int got_ints(char* argv[], const char* flag, int max_count, int out[]) {
     int count = 0;
     for (int i=index + 1; argv[i] && count<max_count; count++, i++) {
 	if (out) {
-	    out[count] = atoi(argv[i]);
+	    if (sscanf(argv[i], "%d", &out[count]) != 1) {
+		break;
+	    }
 	}
     }
 
