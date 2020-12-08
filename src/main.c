@@ -1,4 +1,5 @@
 #include "area.h"
+#include "arguments.h"
 #include "events.h"
 #include "framebuffer.h"
 #include "GL_plus.h"
@@ -283,6 +284,16 @@ int main(int argc, char* argv[]) {
     Rung(RememberBasePath, NULL);
     Rung(init_sdl, quit_sdl);
     Rung(set_gl_attributes, NULL);
+
+    {
+	if (got_flag(argv, "--fullscreen") == 1) {
+	}
+	union IVector2 maybe_resolution;
+	if (got_ints(argv, "--resolution", 2, &maybe_resolution.x) == 2) {
+	resolution = maybe_resolution;
+	}
+    }
+    
     Rung(open_window, close_window);
     Rung(create_gl_context, delete_gl_context);
     Rung(create_renderer, NULL);
