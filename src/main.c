@@ -15,6 +15,9 @@
 #define MAX_INTERNAL_WIDTH 480
 #define MAX_INTERNAL_HEIGHT 270
 
+#define DEFAULT_WINDOW_WIDTH 1280
+#define DEFAULT_WINDOW_HEIGHT 720
+
 static enum Continue init_sdl(void) {
     if (SDL_Init(SDL_INIT_VIDEO) != SDL_OK) {
 	Err("Unable to initialize SDL because %s\n", SDL_GetError());
@@ -42,21 +45,27 @@ static enum Continue set_gl_attributes(void) {
     return UP;
 }
 
-static union IVector2 resolution = { .x=1280, .y=720 };
+static int FULLSCREEN = 0;
+static union IVector2 RESOLUTION = { .x=DEFAULT_WINDOW_WIDTH,
+                                     .y=DEFAULT_WINDOW_HEIGHT };
 
 static float aspect_ratio(void) {
-    return (float) resolution.x / (float) resolution.y;
+    return (float) RESOLUTION.x / (float) RESOLUTION.y;
 }
 
-static SDL_Window* window;
+static SDL_Window* window = NULL;
 
 static enum Continue open_window(void) {
     window = SDL_CreateWindow(TITLE,
 			      SDL_WINDOWPOS_CENTERED,
 			      SDL_WINDOWPOS_CENTERED,
-			      resolution.x,
-			      resolution.y,
-			      SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
+			      RESOLUTION.x,
+			      RESOLUTION.y,
+			      SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | FULLSCREEN);
+
+    /* TODO This might not work well on high-DPI displays */
+    SDL_GetWindowSize(window, &RESOLUTION.x, &RESOLUTION.y);
+    Log("The window has a resolution of %d by %d\n", RESOLUTION.x, RESOLUTION.y);
 
     if (!window) {
 	Err("Unable to open a window because %s\n", SDL_GetError());
@@ -93,7 +102,6 @@ static enum Continue create_gl_context(void) {
 
     glEnable(GL_DEPTH_TEST);
 
-    glViewport(0, 0, resolution.x, resolution.y);
     glClearColor(0.1, 0.1, 0.1, 1.0);
 
     glLogErrors();
@@ -107,7 +115,7 @@ static void delete_gl_context(void) {
     }
 }
 
-static union IVector2 internal_resolution;
+static union IVector2 INTERNAL_RESOLUTION;
 
 static union IVector2 calculate_internal_resolution(union IVector2 resolution) {
     /* TODO Take fullscreen status and relative size of screen into account */
@@ -115,16 +123,16 @@ static union IVector2 calculate_internal_resolution(union IVector2 resolution) {
 }
 
 static float internal_aspect_ratio(void) {
-    return (float) internal_resolution.x / (float) internal_resolution.y;
+    return (float) INTERNAL_RESOLUTION.x / (float) INTERNAL_RESOLUTION.y;
 }
 
 static struct Framebuffer internal_framebuffer;
 static GLuint internal_framebuffer_program;
 
 static enum Continue create_renderer(void) {
-    internal_resolution = calculate_internal_resolution(resolution);
+    INTERNAL_RESOLUTION = calculate_internal_resolution(RESOLUTION);
     Log("For a resolution of %d by %d, the internal resolution is %d by %d\n",
-	resolution.x, resolution.y, internal_resolution.x, internal_resolution.y);
+	RESOLUTION.x, RESOLUTION.y, INTERNAL_RESOLUTION.x, INTERNAL_RESOLUTION.y);
 
     /* The internal framebuffer will never need to be bigger than 480
        by 270, so we can create a framebuffer of that size and
@@ -163,7 +171,7 @@ static enum Continue loop(void) {
     /* Initialize matrices */
     imModel(Matrix4(1));
     imView(Matrix4(1));
-    imProjection(Orthographic(0, resolution.x, 0, resolution.y, -1, 1));
+    imProjection(Orthographic(0, RESOLUTION.x, 0, RESOLUTION.y, -1, 1));
 
     double delta_time = 1.0 / 30.0; /* TODO Replace with a constant */
 
@@ -198,7 +206,7 @@ static enum Continue loop(void) {
 	/* Draw to internal framebuffer */
 	{
 	    glBindFramebuffer(GL_FRAMEBUFFER, internal_framebuffer.buffer);
-	    glViewport(0, 0, internal_resolution.x, internal_resolution.y);
+	    glViewport(0, 0, INTERNAL_RESOLUTION.x, INTERNAL_RESOLUTION.y);
 	
 	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -235,14 +243,14 @@ static enum Continue loop(void) {
 	/* Draw to the window's default framebuffer */
 	{
 	    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	    glViewport(0, 0, resolution.x, resolution.y);
+	    glViewport(0, 0, RESOLUTION.x, RESOLUTION.y);
 
 	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	    imModel(Matrix4(1));
 	    imView(Matrix4(1));
-	    imProjection(Orthographic(0, internal_resolution.x,
-				      0, internal_resolution.y,
+	    imProjection(Orthographic(0, INTERNAL_RESOLUTION.x,
+				      0, INTERNAL_RESOLUTION.y,
 				      -1, 1));
 
 	    imUseProgram(internal_framebuffer_program);
@@ -280,21 +288,34 @@ static enum Continue loop(void) {
 }   
 
 int main(int argc, char* argv[]) {
+    {
+	if (got_flag(argv, "--version") == 1) {
+	    printf("TODO VERSION\n");
+	    return 0;
+	}
+	if (got_flag(argv, "--help") == 1) {
+	    printf("TODO HELP\n");
+	    return 0;
+	}
+    }
+    
     LogVerbosely();
     Rung(RememberBasePath, NULL);
     Rung(init_sdl, quit_sdl);
     Rung(set_gl_attributes, NULL);
+    Rung(open_window, close_window);
 
     {
-	if (got_flag(argv, "--fullscreen") == 1) {
-	}
 	union IVector2 maybe_resolution;
 	if (got_ints(argv, "--resolution", 2, &maybe_resolution.x) == 2) {
-	resolution = maybe_resolution;
+	    RESOLUTION = maybe_resolution;
+	}
+
+	if (got_flag(argv, "--fullscreen") == 1) {
+	    FULLSCREEN = SDL_WINDOW_FULLSCREEN_DESKTOP;
 	}
     }
     
-    Rung(open_window, close_window);
     Rung(create_gl_context, delete_gl_context);
     Rung(create_renderer, NULL);
     Rung(loop, NULL);

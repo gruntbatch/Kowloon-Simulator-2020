@@ -5,7 +5,7 @@ TODO
   - ~~Apply an atlas texture to scenery~~
   - ~~Adopt a ladder planner mechanism~~
   - ~~Set resolution from command line~~
-  - Set fullscreen from command line
+  - ~~Set fullscreen from command line~~
   - Load arbitrary areas using command line arguments
   - Add `@glow` support to the export script
   - Extract magical navigation numbers into variables
