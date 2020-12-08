@@ -598,6 +598,10 @@ GLuint LoadTexture(const char* filepath) {
     stbi_set_flip_vertically_on_load(1);
     int x, y, n;
     unsigned char* data = stbi_load(filepath, &x, &y, &n, 0);
+    if (!data) {
+	Warn("Unable to find %s. Does it exist?\n", filepath);
+	return 0;
+    }
 
     GLuint id;
     glGenTextures(1, &id);
