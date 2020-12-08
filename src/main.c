@@ -127,12 +127,12 @@ static void delete_gl_context(void) {
     }
 }
 
-static union IVector2 INTERNAL_RESOLUTION;
-
 static union IVector2 calculate_internal_resolution(union IVector2 resolution) {
     float divisor = (float)resolution.y / (float)TARGET_INTERNAL_HEIGHT;
     return IVector2((float)resolution.x / divisor, (float)resolution.y / divisor);
 }
+
+static union IVector2 INTERNAL_RESOLUTION;
 
 static float internal_aspect_ratio(void) {
     return (float) INTERNAL_RESOLUTION.x / (float) INTERNAL_RESOLUTION.y;
@@ -250,12 +250,6 @@ static enum Continue loop(void) {
 	
 	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	    /* imView(LookAt(Vector3(10 * sinf(current_time / 10), */
-				  /* 10 * cosf(current_time / 10), */
-				  /* 10), Vector3(0, 0, 0), Vector3(0, 0, 1))); */
-	    /* union Vector3 position = GetAgentPosition(agent); */
-	    /* position = Add3(position, Vector3(0, 0, EYE_HEIGHT)); */
-	    /* imView(LookAt(position, Vector3(0, 0, 0), Vector3(0, 0, 1))); */
 	    imView(player_view);
 	    imProjection(Perspective(90, internal_aspect_ratio(), 0.1, 100.0));
 

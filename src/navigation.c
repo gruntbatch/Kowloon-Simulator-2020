@@ -9,6 +9,11 @@
 #include <string.h>
 
 
+#define COLLISION_FORCE 64
+#define FRICTION_FORCE 8
+#define GOAL_FORCE 16
+
+
 struct Link {
     enum {
 	EDGE,
@@ -135,7 +140,9 @@ Navmesh LoadNavmesh(const char* filepath) {
 		    p->triangle = triangle;
 		    p->width = width;
 		    p->transform_in = Transformation(position, rotation, Vector3(1, 1, 1));
-		    p->transform_out = Transformation(position, MulQ(rotation, AxisAngle(Vector3(0, 0, 1), PI)), Vector3(1, 1, 1));
+		    p->transform_out = Transformation(position,
+						      MulQ(rotation, AxisAngle(Vector3(0, 0, 1), PI)),
+						      Vector3(1, 1, 1));
 		}
 		
 		line = endline + 1;
@@ -192,10 +199,11 @@ void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
     union Vector2 force = Vector2(0, 0);
 
     /* Movement towards the goal */
-    force = Add2(force, Scale2(Normalize2(goal), 13));
+    force = Add2(force, Scale2(Normalize2(goal), GOAL_FORCE));
 
     /* Friction */
-    force = Add2(force, Scale2(Negate2(Normalize2(agent->velocity)), Magnitude2(agent->velocity) * 7));
+    force = Add2(force, Scale2(Negate2(Normalize2(agent->velocity)),
+			       Magnitude2(agent->velocity) * FRICTION_FORCE));
 
     /* Collision */
     int j;
@@ -239,7 +247,7 @@ void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
 		union Vector2 normal = Normalize2(Vector2(-(hit.b.y - hit.a.y),
 							  hit.b.x - hit.a.x));
 		float distance = DistanceToLine2(position, Line2(hit.a, hit.b));
-		force = Add2(force, Scale2(normal, (distance + 0.01) * 66));
+		force = Add2(force, Scale2(normal, (distance + 0.01) * COLLISION_FORCE));
 		break;
 	    }
 	    case NEIGHBOR: {

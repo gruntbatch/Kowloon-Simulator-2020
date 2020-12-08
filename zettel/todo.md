@@ -1,12 +1,10 @@
 TODO
 ====
 
-  - Add `@glow` support to the export script
-  - Extract magical navigation numbers into variables
-  - Implement a flyaround camera
+  - ~~Extract magical navigation numbers into variables~~
   - Build a map from areas
-  - Render textured areas
-  - Parse command line arguments
+  - Add `@glow` support to the export script
+  - Implement a flyaround camera
   - Play background music
   - Play ambient sound effects
   - Play dimensional sound effects
