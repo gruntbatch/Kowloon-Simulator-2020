@@ -29,6 +29,17 @@ int got_ints(char* argv[], const char* flag, int max_count, int out[]) {
 
     int count = 0;
     for (int i=index + 1; argv[i] && count<max_count; count++, i++) {
+	int d;
+	if (sscanf(argv[i], "%d", &d) != 1) {
+	    break;
+	}
+	if (out) {
+	    out[count] = d;
+	}
+    }
+
+    return count;
+}
 	if (out) {
 	    if (sscanf(argv[i], "%d", &out[count]) != 1) {
 		break;
