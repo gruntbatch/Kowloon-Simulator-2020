@@ -17,7 +17,7 @@ static int get_index(char* argv[], const char* flag) {
 
 
 int got_flag(char* argv[], const char* flag) {
-    return get_index(argv, flag);
+    return get_index(argv, flag) != 0;
 }
 
 
