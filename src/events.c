@@ -66,7 +66,7 @@ void PollEvents(void) {
 	    }
             break;
         case SDL_MOUSEMOTION:
-            look = Vector2(e.motion.xrel, e.motion.yrel);
+            look = Add2(look, Vector2(e.motion.xrel, e.motion.yrel));
             break;
 	default:
 	    break;

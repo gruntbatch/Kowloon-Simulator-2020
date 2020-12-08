@@ -166,14 +166,17 @@ static void walkabout(double dt) {
     yaw += look.x * MOUSE_SPEED_X * dt;
 
     union Matrix4 yaw_matrix = Rotation(AxisAngle(Vector3(0, 0, 1), to_radians(yaw)));
-    union Vector2 movement = GetMove();
-    movement = Transform4(InvertM4(yaw_matrix),
-			  Vector4(movement.x, movement.y, 0, 1)).xy;
+
+    union Vector2 move = GetMove();
+    union Vector2 movement = Transform4(InvertM4(yaw_matrix),
+					Vector4(move.x, move.y, 0, 1)).xy;
 
     MoveAgent(player, movement, dt);
+
     player_view = MulM4(Rotation(MulQ(AxisAngle(Vector3(1, 0, 0), to_radians(pitch)),
 				      AxisAngle(Vector3(0, 0, 1), to_radians(yaw)))),
-			InvertM4(Translation(Add3(GetAgentPosition(player), Vector3(0, 0, EYE_HEIGHT)))));
+			InvertM4(Translation(Add3(GetAgentPosition(player),
+						  Vector3(0, 0, EYE_HEIGHT)))));
 }
 
 static char* area_to_load;
@@ -222,6 +225,7 @@ static enum Continue loop(void) {
 
 	while (accumulator >= delta_time) {
 	    /* Call fixed update functions */
+	    PollEvents();
 	    walkabout(delta_time);
 
 	    time += delta_time;
@@ -231,7 +235,6 @@ static enum Continue loop(void) {
 	double alpha = accumulator / delta_time;
 
 	/* Call update functions */
-	PollEvents();
 	
 	/* Draw to internal framebuffer */
 	{
