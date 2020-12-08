@@ -40,10 +40,18 @@ int got_ints(char* argv[], const char* flag, int max_count, int out[]) {
 
     return count;
 }
+
+
+int got_strings(char* argv[], const char* flag, int max_count, char* out[]) {
+    int index = get_index(argv, flag);
+    if (index == 0) {
+	return 0;
+    }
+
+    int count = 0;
+    for (int i=index + 1; argv[i] && count<max_count; count++, i++) {
 	if (out) {
-	    if (sscanf(argv[i], "%d", &out[count]) != 1) {
-		break;
-	    }
+	    out[count] = argv[i];
 	}
     }
 
