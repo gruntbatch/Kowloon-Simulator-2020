@@ -18,10 +18,10 @@ out vec2 inout_uv;
 void main() {
     vec3 mv_position = vec3(view * model * vec4(in_position, 1.0));
     vec3 mv_normal = normalize(vec3(view * model * vec4(in_normal, 0.0)));
-    vec3 view_vector = vec3(0, 0, 1);
-    float diffuse = max(dot(mv_normal, view_vector), 0.2);
-    diffuse = diffuse * 10 * (1 / length(mv_position));
-    
+    vec3 light_dir = normalize(-mv_position);
+    float diffuse = max(dot(mv_normal, light_dir), 0.0);
+    diffuse = diffuse * clamp(1 - length(mv_position) / 20, 0.0, 1.0);
+
     gl_Position = snap(in_position);
     inout_normal = in_normal;
     inout_color = vec4(vec3(diffuse), 1.0);
