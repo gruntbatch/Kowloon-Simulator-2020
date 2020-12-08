@@ -1,6 +1,33 @@
 Cyberpunk 1997
 ==============
 
+Command Line Arguments
+----------------------
+
+The game now takes command line arguments! Unfortunately, that means calling `make run` doesn't work any more. You must now do something like this to first build the program and then to run it:
+
+    make all
+	bin\Cuberpunk1997.exe --arguments
+	
+You can set the resolution:
+
+	--resolution 800 600
+	--resolution 1920 1080
+	
+You can launch in fullscreen. This will automatically render at your desktop resolution:
+
+    --fullscreen
+	
+And you can load and preview a specific area. Note, that you _must_ specify an area in order for the game to run:
+
+    --area assets/areas/alley_01
+	
+__Note:__ The `--area` flag is a bit janky at the moment. In order to load an area, you must specify the area like so:
+
+    assets/areas/AREA_NAME_HERE
+	
+Note that there is no extension after the area name, as the program automatically puts one there.
+
 Prerequisites
 -------------
 
