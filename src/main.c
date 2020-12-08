@@ -121,7 +121,7 @@ static union IVector2 INTERNAL_RESOLUTION;
 
 static union IVector2 calculate_internal_resolution(union IVector2 resolution) {
     /* TODO Take fullscreen status and relative size of screen into account */
-    return IVector2(resolution.x / 4, resolution.y / 4);
+    return IVector2((float)resolution.x / 4.5, (float)resolution.y / 4.5);
 }
 
 static float internal_aspect_ratio(void) {
