@@ -54,5 +54,5 @@ void imFlush(void);
 
 
 GLuint LoadShader(GLenum type, const char* filepath);
-GLuint LoadProgram(GLuint vertex, GLuint fragment);
+GLuint LoadProgram(const char* vertex_filepath, const char* fragment_filepath);
 GLuint LoadTexture(const char* filepath);

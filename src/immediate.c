@@ -569,7 +569,9 @@ GLuint LoadShader(GLenum type, const char * filepath) {
 }
 
 
-GLuint LoadProgram(GLuint vertex, GLuint fragment) {
+GLuint LoadProgram(const char* vertex_filepath, const char* fragment_filepath) {
+    GLuint vertex = LoadShader(GL_VERTEX_SHADER, vertex_filepath);
+    GLuint fragment = LoadShader(GL_FRAGMENT_SHADER, fragment_filepath);
     GLuint id = glProgramFromShaders(vertex, fragment);
 
     glLogErrors();

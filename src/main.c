@@ -138,10 +138,8 @@ static enum Continue create_renderer(void) {
        by 270, so we can create a framebuffer of that size and
        modulate the viewport size */
     internal_framebuffer = CreateFramebuffer(MAX_INTERNAL_WIDTH, MAX_INTERNAL_HEIGHT);
-    internal_framebuffer_program = LoadProgram(LoadShader(GL_VERTEX_SHADER,
-							  FromBase("assets/shaders/world_space.vert")),
-					       LoadShader(GL_FRAGMENT_SHADER,
-							  FromBase("assets/shaders/textured.frag")));
+    internal_framebuffer_program = LoadProgram(FromBase("assets/shaders/world_space.vert"),
+					       FromBase("assets/shaders/textured.frag"));
     
     imInitTransformBuffer();
     imInitInternalVertexArray();
@@ -150,14 +148,10 @@ static enum Continue create_renderer(void) {
 }
 
 static enum Continue loop(void) {
-    GLuint vertex_color_program = LoadProgram(LoadShader(GL_VERTEX_SHADER,
-							 FromBase("assets/shaders/world_space.vert")),
-					      LoadShader(GL_FRAGMENT_SHADER,
-							 FromBase("assets/shaders/vertex_color.frag")));
-    GLuint little_light_program = LoadProgram(LoadShader(GL_VERTEX_SHADER,
-							 FromBase("assets/shaders/little_light.vert")),
-					      LoadShader(GL_FRAGMENT_SHADER,
-							 FromBase("assets/shaders/textured_vertex_color.frag")));
+    GLuint vertex_color_program = LoadProgram(FromBase("assets/shaders/world_space.vert"),
+					      FromBase("assets/shaders/vertex_color.frag"));
+    GLuint little_light_program = LoadProgram(FromBase("assets/shaders/little_light.vert"),
+					      FromBase("assets/shaders/textured_vertex_color.frag"));
     GLuint atlas_texture = LoadTexture(FromBase("assets/textures/atlas.png"));
 
     Navmesh navmesh = LoadNavmesh(FromBase("assets/areas/alley_01"));
@@ -287,7 +281,7 @@ static enum Continue loop(void) {
     return UP;
 }   
 
-int main(int argc, char* argv[]) {
+int main(int rgc, char* argv[]) {
     {
 	if (got_flag(argv, "--version") == 1) {
 	    printf("TODO VERSION\n");
