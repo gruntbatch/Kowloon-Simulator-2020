@@ -14,19 +14,16 @@
 #define GOAL_FORCE 16
 
 
-struct Link {
-    enum {
-	EDGE,
-	NEIGHBOR,
-	PORTAL,
-    } to;
-    int target;
-};
-
-
 struct Triangle {
     union Triangle3 triangle;
-    struct Link links[3];
+    struct Neighbor {
+	enum {
+	    NOTHING,
+	    TRIANGLE,
+	    NETWORK,
+	} to;
+	int index;
+    } neighbors[3];
 };
 
 
@@ -65,8 +62,8 @@ void LoadNavmesh(Area id, const char* filepath) {
 			   "%f,%f,%f "
 			   "%f,%f,%f "
 			   "%f,%f,%f",
-			   &t.links[0].to, &t.links[1].to, &t.links[2].to,
-			   &t.links[0].target, &t.links[1].target, &t.links[2].target,
+			   &t.neighbors[0].to, &t.neighbors[1].to, &t.neighbors[2].to,
+			   &t.neighbors[0].index, &t.neighbors[1].index, &t.neighbors[2].index,
 			   &t.triangle.a.x, &t.triangle.a.y, &t.triangle.a.z,
 			   &t.triangle.b.x, &t.triangle.b.y, &t.triangle.b.z,
 			   &t.triangle.c.x, &t.triangle.c.y, &t.triangle.c.z);
@@ -116,6 +113,17 @@ struct Portals {
     int portal_count;
     struct Portal portals[MAX_PORTAL_COUNT];
 };
+
+
+
+/* struct Link { */
+/*     Area  */
+/* } */
+
+
+/* struct Network { */
+    
+/* } */
 
 
 /* This variable name is a crime against humanity */
@@ -277,22 +285,22 @@ void MoveAgent(Agent id, union Vector2 goal, float delta_time) {
 	}
 
 	if (hit.i != -1) {
-	    struct Link link = triangle.links[hit.i];
-	    switch (link.to) {
-	    case EDGE: {
+	    struct Neighbor neighbor = triangle.neighbors[hit.i];
+	    switch (neighbor.to) {
+	    case NOTHING: {
 		union Vector2 normal = Normalize2(Vector2(-(hit.b.y - hit.a.y),
 							  hit.b.x - hit.a.x));
 		float distance = DistanceToLine2(position, Line2(hit.a, hit.b));
 		force = Add2(force, Scale2(normal, (distance + 0.01) * COLLISION_FORCE));
 		break;
 	    }
-	    case NEIGHBOR: {
-		agent->triangle = link.target;
+	    case TRIANGLE: {
+		agent->triangle = neighbor.index;
 		break;
 	    }
-	    case PORTAL: {
+	    case NETWORK: {
 		struct Portals portals = portalss[agent->area];
-		struct Portal portal = portals.portals[link.target];
+		struct Portal portal = portals.portals[neighbor.index];
 		struct Portal next_portal = portals.portals[portal.target];
 
 		union Matrix4 transform = MulM4(next_portal.transform_in, InvertM4(portal.transform_out));
