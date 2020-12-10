@@ -333,6 +333,11 @@ struct Agent {
     union Vector2 acceleration;
     union Vector2 velocity;
     union Vector2 position;
+
+    /* TODO This should only be a Quaternion, but I don't want to fuck
+       around with converting between Matrix4 and Quaternion, so we'll
+       just use a Matrix4 instead */
+    union Matrix4 rotation;
 };
 
 
@@ -358,6 +363,8 @@ Agent SpawnAgent(Area area_id) {
     union Triangle3 triangle = navmesh->cells[agent->cell_index].triangle;
     agent->position = Vector2((triangle.a.x + triangle.b.x + triangle.c.x) / 3.0,
 			      (triangle.a.y + triangle.b.y + triangle.c.y) / 3.0);
+
+    agent->rotation = Rotation(AxisAngle(Vector3(0, 0, 1), to_radians((float)rand()/1000.0)));
     
     return agent_id;
 }
@@ -438,6 +445,8 @@ void MoveAgent(Agent agent_id, union Vector2 goal, float delta_time) {
 		agent->acceleration = Transform4(transform, Vector4(acceleration.x, acceleration.y, 0, 1)).xy;
 		agent->velocity = Transform4(transform, Vector4(velocity.x, velocity.y, 0, 1)).xy;
 
+		agent->rotation = MulM4(transform, agent->rotation);
+
 		agent->cell_index = in_portal->cell_index;
 		break;
 	    }
@@ -464,6 +473,11 @@ union Vector3 GetAgentPosition(Agent id) {
     union Triangle3 triangle = navmeshes[agent->area_id.base].cells[agent->cell_index].triangle;
 
     return From2To3(agent->position, triangle.a, triangle.b, triangle.c);
+}
+
+
+union Matrix4 GetAgentRotation(Agent id) {
+    return agents[id].rotation;
 }
 
 

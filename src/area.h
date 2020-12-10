@@ -40,5 +40,6 @@ typedef u32 Agent;
 Agent SpawnAgent(Area area);
 void MoveAgent(Agent agent, union Vector2 goal, float delta_time);
 union Vector3 GetAgentPosition(Agent agent);
+union Matrix4 GetAgentRotation(Agent agent);
 Area GetAgentArea(Agent agent);
 void DrawAgent(Agent agent, float radius);
