@@ -55,3 +55,4 @@ assets: $(ASSET_FILES)
 .PHONY: clean_assets
 clean_assets:
 	-$(RM) $(ASSET_FILES)
+	-$(RM) -r $(COOKED_DIR)
