@@ -20,6 +20,7 @@ typedef union Area {
 Area LoadArea(const char* filepath);
 Area InstanceArea(const Area base);
 Area GetArea(u16 index);
+Area GetAreaInstance(u16 base, u16 instance);
 
 
 void LoadNavmesh(Area id, const char* filepath);
@@ -27,6 +28,8 @@ void DrawNavmesh(Area id);
 
 
 void LoadNetwork(Area id, const char* filepath);
+void InstanceNetwork(Area id);
+void LinkInstancedNetworks(void);
 void DrawNetwork(Area id);
 
 

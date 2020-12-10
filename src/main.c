@@ -152,6 +152,25 @@ static enum Continue create_renderer(void) {
 }
 
 static char* area_to_load;
+static GLuint64 scenery_vertex_array;
+
+static enum Continue load_area(void) {
+    if (!area_to_load) {
+	return DOWN;
+    }
+
+    scenery_vertex_array = rtGenVertexArray();
+    rtBindVertexArray(scenery_vertex_array);
+    Area area = LoadArea(area_to_load);
+    rtFillBuffer();
+
+    InstanceArea(area);
+    LinkInstancedNetworks();
+
+    return UP;
+}
+
+
 
 static enum Continue loop(void) {
     GLuint vertex_color_program = LoadProgram(FromBase("assets/shaders/world_space.vert"),
@@ -160,16 +179,7 @@ static enum Continue loop(void) {
 					      FromBase("assets/shaders/textured_vertex_color.frag"));
     GLuint atlas_texture = LoadTexture(FromBase("assets/textures/atlas.png"));
 
-    if (!area_to_load) {
-	return DOWN;
-    }
-
-    GLuint64 vertex_array = rtGenVertexArray();
-    rtBindVertexArray(vertex_array);
-    Area area = LoadArea(area_to_load);
-    rtFillBuffer();
-
-    SpawnPlayer(area);
+    SpawnPlayer(GetAreaInstance(0, 0));
     
     /* Initialize matrices */
     imModel(Matrix4(1));
@@ -206,6 +216,7 @@ static enum Continue loop(void) {
 	double alpha = accumulator / delta_time;
 
 	/* Call update functions */
+	Area area = GetPlayerArea();
 	
 	/* Draw to internal framebuffer */
 	{
@@ -229,7 +240,7 @@ static enum Continue loop(void) {
 	    imBindTexture(GL_TEXTURE_2D, atlas_texture);
 
 	    {
-		rtBindVertexArray(vertex_array);
+		rtBindVertexArray(scenery_vertex_array);
 		DrawSceneryRecursively(area, -1, Matrix4(1), 3);
 		rtFlush();
 	    }
@@ -329,6 +340,9 @@ int main(int rgc, char* argv[]) {
 
     {
 	if (got_strings(argv, "--area", 1, &area_to_load) == 1) {
+	    Rung(load_area, NULL);
+	} else {
+	    /* Rung(load_areas_from_index, NULL); */
 	}
     }
     

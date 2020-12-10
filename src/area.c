@@ -11,10 +11,14 @@
 
 
 static u16 area_count = 0;
+const Area INVALID_AREA = { .base=MAX_BASE_AREA_COUNT, .instance=MAX_INSTANCED_AREA_COUNT };
+static int is_invalid(Area area) {
+    return area.base == INVALID_AREA.base && area.instance == INVALID_AREA.instance;
+}
 
 
 Area LoadArea(const char* filepath) {
-    Area id = { .base=area_count++, .instance=0 };
+    Area id = { .base=area_count++, .instance=MAX_INSTANCED_AREA_COUNT };
     
     {
 	char navmesh_filepath[256] = { 0 };
@@ -41,8 +45,25 @@ Area LoadArea(const char* filepath) {
 }
 
 
+static u16 instance_count = 0;
+static Area instances[MAX_INSTANCED_AREA_COUNT];
+
+
+Area InstanceArea(const Area base) {
+    Area id = { .base=base.base, .instance=instance_count++ };
+    instances[id.instance] = id;
+    InstanceNetwork(id);
+    return id;
+}
+
+
 Area GetArea(u16 index) {
     return (union Area) { .base=index, .instance=0 };
+}
+
+
+Area GetAreaInstance(u16 base, u16 instance) {
+    return (union Area) { .base=base, .instance=instance};
 }
 
 
@@ -145,7 +166,7 @@ struct Network {
 
 
 static struct Network base_networks[MAX_BASE_AREA_COUNT];
-/* static struct Network instanced_networks[MAX_INSTANCED_AREA_COUNT]; */
+static struct Network instanced_networks[MAX_INSTANCED_AREA_COUNT];
 
 
 void LoadNetwork(Area id, const char* filepath) {
@@ -198,9 +219,120 @@ void LoadNetwork(Area id, const char* filepath) {
 }
 
 
+void InstanceNetwork(Area id) {
+    instanced_networks[id.instance] = base_networks[id.base];
+}
+
+
+void LinkInstancedNetworks(void) {
+    /* boi */
+    /* Iterate through all instanced areas, marking all portals as
+       unconnected */
+    for (int instance_index=0; instance_index<instance_count; instance_index++) {
+	struct Network* network = &instanced_networks[instance_index];
+	for (int portal_index=0; portal_index<network->portal_count; portal_index++) {
+	    network->portals[portal_index].destination = INVALID_AREA;
+	}
+    }
+    
+    /* Iterate through all instanced areas, connecting one random
+       portal of each to another */
+    for (int instance_index=0; instance_index<instance_count; instance_index++) {
+	int instance_index_a = instance_index;
+	int instance_index_b = (instance_index + 1) % instance_count;
+	
+	struct Network* network_a = &instanced_networks[instance_index_a];
+	struct Network* network_b = &instanced_networks[instance_index_b];
+
+	/* In theory, only one portal should be linked, so if we
+	   happened to get the portal, just increment the portal
+	   index */
+	/* NOTE If an area only has a single portal, this won't work
+	   properly */
+	int portal_index_a = rand() % network_a->portal_count;
+	if (!is_invalid(network_a->portals[portal_index_a].destination)) {
+	    portal_index_a = (portal_index_a + 1) % network_a->portal_count;
+	}
+	int portal_index_b = rand() % network_b->portal_count;
+	if (!is_invalid(network_b->portals[portal_index_b].destination)) {
+	    portal_index_b = (portal_index_b + 1) % network_b->portal_count;
+	}
+
+	network_a->portals[portal_index_a].destination = instances[instance_index_b];
+	network_a->portals[portal_index_a].portal_index = portal_index_b;
+	
+	network_b->portals[portal_index_b].destination = instances[instance_index_a];
+	network_b->portals[portal_index_b].portal_index = portal_index_a;
+    }
+
+    /* Create a list of all unlinked portals, randomize that list,
+       then link the portals together */
+    int unlinked_portal_count = 0;
+    struct Unlinked {
+	int instance_index;
+	int portal_index;
+    } unlinked_portals[MAX_INSTANCED_AREA_COUNT * MAX_PORTAL_COUNT];
+    for (int instance_index=0; instance_index<instance_count; instance_index++) {
+	struct Network* network = &instanced_networks[instance_index];
+	for (int portal_index=0; portal_index<network->portal_count; portal_index++) {
+	    if (is_invalid(network->portals[portal_index].destination)) {
+		unlinked_portals[unlinked_portal_count].instance_index = instance_index;
+		unlinked_portals[unlinked_portal_count].portal_index = portal_index;
+		unlinked_portal_count++;
+	    }
+	}
+    }
+    
+    /* Adapted from https://stackoverflow.com/a/6127606 */
+    if (unlinked_portal_count > 1) {
+	size_t i;
+	for (i=0; i<unlinked_portal_count-1; i++) {
+	    size_t j = i + rand() / (RAND_MAX / (unlinked_portal_count - i) + 1);
+	    struct Unlinked t = unlinked_portals[j];
+	    unlinked_portals[j] = unlinked_portals[i];
+	    unlinked_portals[i] = t;
+	}
+    }
+
+    int even_unlinked_portal_count = unlinked_portal_count - (unlinked_portal_count % 2);
+    for (int index=0; index<even_unlinked_portal_count; index += 2) {
+	struct Unlinked a = unlinked_portals[index];
+	struct Unlinked b = unlinked_portals[index + 1];
+
+	struct Network* network_a = &instanced_networks[a.instance_index];
+	struct Network* network_b = &instanced_networks[b.instance_index];
+
+	network_a->portals[a.portal_index].destination = instances[b.instance_index];
+	network_a->portals[a.portal_index].portal_index = b.portal_index;
+	
+	network_b->portals[b.portal_index].destination = instances[a.instance_index];
+	network_b->portals[b.portal_index].portal_index = a.portal_index;
+    }
+
+    /* If there is a single portal left over, just link it to itself */
+    /* TODO Modify this so that we end up with three portals linking to each other */
+    if (unlinked_portal_count % 2) {
+	struct Unlinked a = unlinked_portals[unlinked_portal_count - 1];
+
+	struct Network* network_a = &instanced_networks[a.instance_index];
+
+	network_a->portals[a.portal_index].destination = instances[a.instance_index];
+	network_a->portals[a.portal_index].portal_index = a.portal_index;
+    }
+}
+
+
+static struct Network* get_network(Area id) {
+    if (id.instance == MAX_INSTANCED_AREA_COUNT) {
+	return &base_networks[id.base];
+    } else {
+	return &instanced_networks[id.instance];
+    }
+}
+
+
 void DrawNetwork(Area id) {
-    /* TODO correctly select base or instanced network */
-    struct Network* network = &base_networks[id.base];
+    struct Network* network = get_network(id);
     imColor3ub(0, 100, 50);
     for (int i=0; i<network->portal_count; ++i) {
 	imModel(network->portals[i].transform_in);
@@ -296,7 +428,7 @@ void DrawSceneryTransformed(Area id, union Matrix4 transform) {
 void DrawSceneryRecursively(Area id, int portal_index, union Matrix4 transform, int depth) {
     /* TODO Clear depth buffer */
     if (depth) {
-	struct Network* network = &base_networks[id.base];
+	struct Network* network = get_network(id);
 	for (int i=0; i<network->portal_count; i++) {
 	/* for (int i=0; i<1; i++) { */
 	    if (i == portal_index) {
@@ -432,7 +564,7 @@ void MoveAgent(Agent agent_id, union Vector2 goal, float delta_time) {
 		break;
 	    }
 	    case NETWORK: {
-		struct Network* network = &base_networks[agent->area_id.base];
+		struct Network* network = get_network(agent->area_id);
 		struct Portal* out_portal = &network->portals[cell->connection_index[hit.edge_index]];
 		/* TODO Change the agent's area id */
 		struct Portal* in_portal = &network->portals[out_portal->portal_index];
