@@ -24,22 +24,32 @@ find_assets = $(patsubst $(1)/%,%,$(shell find $(1) -name "*.$(2)"))
 raw_to_cooked = $(patsubst %.$(2),$(3)/%.$(4),$(call find_assets,$(1),$(2)))
 
 
-ASSET_FILES =
-ASSET_FILES += $(call raw_to_cooked,$(RAW_BIN_DIR),blend,$(COOKED_DIR),blend_sentinel)
-ASSET_FILES += $(call raw_to_cooked,$(RAW_DIR),frag,$(COOKED_DIR),frag)
-ASSET_FILES += $(call raw_to_cooked,$(RAW_BIN_DIR),png,$(COOKED_DIR),png)
-ASSET_FILES += $(call raw_to_cooked,$(RAW_DIR),vert,$(COOKED_DIR),vert)
+AREA_INDEX = $(COOKED_DIR)/area.index
+BLEND_SENTINEL_FILES += $(call raw_to_cooked,$(RAW_BIN_DIR),blend,$(COOKED_DIR),blend_sentinel)
+FRAG_FILES += $(call raw_to_cooked,$(RAW_DIR),frag,$(COOKED_DIR),frag)
+PNG_FILES += $(call raw_to_cooked,$(RAW_BIN_DIR),png,$(COOKED_DIR),png)
+VERT_FILES += $(call raw_to_cooked,$(RAW_DIR),vert,$(COOKED_DIR),vert)
 
+
+ASSET_FILES = $(AREA_INDEX)
+ASSET_FILES += $(BLEND_SENTINEL_FILES)
+ASSET_FILES += $(FRAG_FILES)
+ASSET_FILES += $(PNG_FILES)
+ASSET_FILES += $(VERT_FILES)
+
+
+$(COOKED_DIR)/area.index: $(BLEND_SENTINEL_FILES) tools/area_indexer.py
+	mkdir -p $(@D)
+	python3 tools/area_indexer.py $@
 
 $(COOKED_DIR)/%.blend_sentinel: $(RAW_BIN_DIR)/%.blend tools/io_kowl/*.py
 	mkdir -p $(@D)
 	$(BLENDER_MACOS) -b --factory-startup $< --python tools/io_kowl/area.py -- $(COOKED_DIR)
 	touch $@
 
-
 $(COOKED_DIR)/%.frag: $(RAW_DIR)/%.frag $(RAW_DIR)/shaders/*.glsl tools/glsl_includer.py
 	mkdir -p $(@D)
-	python tools/glsl_includer.py $< $@
+	python3 tools/glsl_includer.py $< $@
 
 $(COOKED_DIR)/%.png: $(RAW_BIN_DIR)/%.png
 	mkdir -p $(@D)
@@ -47,7 +57,7 @@ $(COOKED_DIR)/%.png: $(RAW_BIN_DIR)/%.png
 
 $(COOKED_DIR)/%.vert: $(RAW_DIR)/%.vert $(RAW_DIR)/shaders/*.glsl tools/glsl_includer.py
 	mkdir -p $(@D)
-	python tools/glsl_includer.py $< $@
+	python3 tools/glsl_includer.py $< $@
 
 .PHONY: assets
 assets: $(ASSET_FILES)
