@@ -274,7 +274,7 @@ def export_data(cooked_dir, data):
                 fw("{},{},{} ".format(*targets))
                 fw("{} {} {}\n".format(*["{:.3f},{:.3f},{:.3f}".format(*x.to_tuple()) for x in vertices]))
 
-        with open(os.path.join(dirname, name + ".portals"), "w", encoding="utf8", newline="\n") as f:
+        with open(os.path.join(dirname, name + ".network"), "w", encoding="utf8", newline="\n") as f:
             fw = f.write
 
             fw(INFO)
