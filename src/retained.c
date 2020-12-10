@@ -33,8 +33,8 @@ GLuint64 rtLoadMeshAsset(const char* name) {
 	strcat(filepath, ".mesh");
 	kv->value = rtLoadMesh(FromBase(filepath));
 	return kv->value;
+    } else {
+	Warn("Unable to load any more meshes\n");
+	return 0;
     }
-
-    Warn("Unable to load mesh asset. Does %s exist?", name);
-    return 0;
 }
