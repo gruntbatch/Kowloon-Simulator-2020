@@ -19,6 +19,7 @@ typedef union Area {
 
 Area LoadArea(const char* filepath);
 Area InstanceArea(const Area base);
+Area GetArea(u16 index);
 
 
 void LoadNavmesh(Area id, const char* filepath);
@@ -39,4 +40,5 @@ typedef u32 Agent;
 Agent SpawnAgent(Area area);
 void MoveAgent(Agent agent, union Vector2 goal, float delta_time);
 union Vector3 GetAgentPosition(Agent agent);
+Area GetAgentArea(Agent agent);
 void DrawAgent(Agent agent, float radius);

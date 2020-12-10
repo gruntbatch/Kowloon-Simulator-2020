@@ -41,6 +41,11 @@ Area LoadArea(const char* filepath) {
 }
 
 
+Area GetArea(u16 index) {
+    return (union Area) { .base=index, .instance=0 };
+}
+
+
 struct Cell {
     union Triangle3 triangle;
     enum {
@@ -446,6 +451,11 @@ void MoveAgent(Agent agent_id, union Vector2 goal, float delta_time) {
     agent->acceleration = Scale2(force, 1.0 / agent->mass);
     agent->velocity = Add2(agent->velocity, Scale2(agent->acceleration, delta_time));
     agent->position = Add2(agent->position, Scale2(agent->velocity, delta_time));
+}
+
+
+Area GetAgentArea(Agent id) {
+    return agents[id].area_id;
 }
 
 

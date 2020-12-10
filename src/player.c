@@ -51,6 +51,11 @@ union Matrix4 GetPlayerView(void) {
 }
 
 
+Area GetPlayerArea(void) {
+    return GetAgentArea(player);
+}
+
+
 void DrawPlayer(float radius) {
     DrawAgent(player, radius);
 }
