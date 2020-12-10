@@ -279,9 +279,9 @@ void DrawScenery(Area id) {
 }
 
 
-#define GOAL_FORCE 16.0f
-#define FRICTION_FORCE 32.0f
 #define COLLISION_FORCE 64.0f
+#define FRICTION_FORCE 8.0f
+#define GOAL_FORCE 16.0f
 #define MAX_COLLISION_ITERATION_COUNT 16
 
 
