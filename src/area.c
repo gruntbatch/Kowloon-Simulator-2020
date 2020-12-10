@@ -279,6 +279,42 @@ void DrawScenery(Area id) {
 }
 
 
+void DrawSceneryTransformed(Area id, union Matrix4 transform) {
+    struct Scenery* scenery = &sceneries[id.base];
+    for (int i=0; i<scenery->static_count; ++i) {
+	imModel(MulM4(transform, scenery->statics[i].transform));
+	rtDrawArrays(GL_TRIANGLES, scenery->statics[i].mesh);
+    }
+}
+
+
+void DrawSceneryRecursively(Area id, int portal_index, union Matrix4 transform, int depth) {
+    /* TODO Clear depth buffer */
+    if (depth) {
+	struct Network* network = &base_networks[id.base];
+	for (int i=0; i<network->portal_count; i++) {
+	/* for (int i=0; i<1; i++) { */
+	    if (i == portal_index) {
+		continue;
+	    }
+
+	    struct Portal* out_portal = &network->portals[i];
+	    struct Portal* in_portal = &network->portals[out_portal->portal_index];
+	    
+	    union Matrix4 transform1 = MulM4(out_portal->transform_out, InvertM4(in_portal->transform_in));
+	    transform1 = MulM4(transform, transform1);
+
+	    /* TODO use out_portal->area_id */
+	    DrawSceneryRecursively(id,
+				   out_portal->portal_index,
+				   transform1,
+				   depth - 1);
+	}
+    }
+    DrawSceneryTransformed(id, transform);
+}
+
+
 #define COLLISION_FORCE 64.0f
 #define FRICTION_FORCE 8.0f
 #define GOAL_FORCE 16.0f

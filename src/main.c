@@ -230,7 +230,7 @@ static enum Continue loop(void) {
 
 	    {
 		rtBindVertexArray(vertex_array);
-		DrawScenery(area);
+		DrawSceneryRecursively(area, -1, Matrix4(1), 3);
 		rtFlush();
 	    }
 	    

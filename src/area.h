@@ -31,6 +31,8 @@ void DrawNetwork(Area id);
 
 void LoadScenery(Area id, const char* filepath);
 void DrawScenery(Area id);
+void DrawSceneryTransformed(Area id, union Matrix4 transform);
+void DrawSceneryRecursively(Area id, int portal_index, union Matrix4 transform, int depth);
 
 
 typedef u32 Agent;
