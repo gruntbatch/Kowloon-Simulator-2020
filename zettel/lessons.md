@@ -9,3 +9,7 @@ Lessons
     - How does `vcvarsall.bat` select what SDK to target?
 	- And is there a way to specify that from the command line?
   - Refactoring will make you feel like you're spinning your wheels
+  - Elegance has a debugging cost
+    - It may be less expensive to use inelegant, verbose ways of doing
+      something if that means you don't have to pause progress to test
+      a more refined solution.

@@ -14,22 +14,45 @@ struct UniformBuffer MATRICES = { .name="Matrices",
 				  .id=0 };
 
 
+struct UniformBuffer LIGHTS = { .name="Lights",
+                                .size=(4 * sizeof(int)) + (8 * 2 * sizeof(union Vector4)),
+				.bind=1,
+				.id=0 };
+
+
 void imInitTransformBuffer(void) {
     glLogErrors();
 
     /* TODO Since this can fail, should it return a Maybe? */
-    glGenBuffers(1, &MATRICES.id);
+    {
+	glGenBuffers(1, &MATRICES.id);
 
-    glBindBuffer(GL_UNIFORM_BUFFER, MATRICES.id); {
-        glBufferData(GL_UNIFORM_BUFFER,
-                     MATRICES.size,
-                     NULL,
-                     GL_DYNAMIC_DRAW);
-    } glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	glBindBuffer(GL_UNIFORM_BUFFER, MATRICES.id); {
+	    glBufferData(GL_UNIFORM_BUFFER,
+			 MATRICES.size,
+			 NULL,
+			 GL_DYNAMIC_DRAW);
+	} glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	
+	glBindBufferBase(GL_UNIFORM_BUFFER,
+			 MATRICES.bind,
+			 MATRICES.id);
+    }
 
-    glBindBufferBase(GL_UNIFORM_BUFFER,
-                     MATRICES.bind,
-                     MATRICES.id);
+    {
+	glGenBuffers(1, &LIGHTS.id);
+    
+	glBindBuffer(GL_UNIFORM_BUFFER, LIGHTS.id); {
+	    glBufferData(GL_UNIFORM_BUFFER,
+			 LIGHTS.size,
+			 NULL,
+			 GL_DYNAMIC_DRAW);
+	} glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	glBindBufferBase(GL_UNIFORM_BUFFER,
+			 LIGHTS.bind,
+			 LIGHTS.id);
+    }
 
     glLogErrors();
 }
@@ -77,6 +100,7 @@ enum CommandType {
     COMMAND_PRIMITIVE,
     COMMAND_PROGRAM,
     COMMAND_PROJECTION,
+    COMMAND_SET_LIGHTS,
     COMMAND_VIEW,
 };
 
@@ -87,6 +111,11 @@ struct Command {
         struct {
             GLenum texture;
         } active_texture;
+        struct {
+            GLenum target;
+            GLuint id;
+            GLenum slot;
+        } bind_texture;
 	struct {
 	    GLbitfield mask;
 	} clear;
@@ -102,11 +131,9 @@ struct Command {
             GLuint id;
         } program;
         union Matrix4 projection;
-        struct {
-            GLenum target;
-            GLuint id;
-            GLenum slot;
-        } bind_texture;
+	struct {
+	    void* data;
+	} set_lights;
         union Matrix4 view;
     };
 };
@@ -200,6 +227,17 @@ void imUseProgram(GLuint program) {
 
     current_command.type = COMMAND_PROGRAM;
     current_command.program.id = program ;
+
+    ADVANCE_COMMAND();
+}
+
+
+/* TODO Improve this */
+void imSetLights(void* data) {
+    MODE_MUST_BE(COMMAND_ANY);
+
+    current_command.type = COMMAND_SET_LIGHTS;
+    current_command.set_lights.data = data;
 
     ADVANCE_COMMAND();
 }
@@ -515,6 +553,7 @@ void rtFlush(void) {
             glLogErrors();
             glActiveTexture(command.active_texture.texture);
             glLogErrors();
+	    break;
         case COMMAND_ANY:
             break;
         case COMMAND_BIND_TEXTURE:
@@ -552,6 +591,14 @@ void rtFlush(void) {
             set_matrix(command.projection, 0);
             glLogErrors();
             break;
+	case COMMAND_SET_LIGHTS:
+	    glBindBuffer(GL_UNIFORM_BUFFER, LIGHTS.id); {
+		glBufferSubData(GL_UNIFORM_BUFFER,
+				0,
+				LIGHTS.size,
+				command.set_lights.data);
+	    } glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	    break;
         case COMMAND_VIEW:
             set_matrix(command.view, 1);
             glLogErrors();
@@ -591,16 +638,15 @@ GLuint LoadProgram(const char* vertex_filepath, const char* fragment_filepath) {
     GLuint fragment = LoadShader(GL_FRAGMENT_SHADER, fragment_filepath);
     GLuint id = glProgramFromShaders(vertex, fragment);
 
-    glLogErrors();
+    /* Every program needs access to the matrix uniform buffer */
+    GLuint matrix_index = glGetUniformBlockIndex(id, MATRICES.name);
+    glUniformBlockBinding(id, matrix_index, MATRICES.bind);
 
-    GLuint matrix_index = glGetUniformBlockIndex(id,
-                                                 MATRICES.name);
-
-    glLogErrors();
-
-    glUniformBlockBinding(id,
-                          matrix_index,
-                          MATRICES.bind);
+    GLuint lights_index = glGetUniformBlockIndex(id, LIGHTS.name);
+    if (lights_index != GL_INVALID_INDEX) {
+	Log("MATRIX %u LIGHTS %u\n", matrix_index, lights_index);
+	glUniformBlockBinding(id, lights_index, LIGHTS.bind);
+    }
 
     /* Check for errors after all of those OpenGL calls */
     glLogErrors();

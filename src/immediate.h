@@ -29,6 +29,9 @@ void imBindTexture(GLenum target, GLuint texture);
 void imUseProgram(GLuint program);
 
 
+void imSetLights(void* data);
+
+
 void imBegin(GLenum mode);
 void imEnd(void);
 
