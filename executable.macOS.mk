@@ -24,12 +24,12 @@ O_FILES = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(C_FILES))
 # Target a reasonable C standard.
 CFLAGS += -std=c11
 # Enable more warning messages, and treat them as errors.
-CFLAGS += -Wpedantic -Wall -Wmissing-prototypes -Wmissing-declarations
+CFLAGS += -Wpedantic -Wall -Wmissing-prototypes -Wmissing-declarations -Wimplicit-fallthrough
 CFLAGS += -Werror
 # However, it's easy to trigger some warnings during development, so
 # just let them be warnings.
 CFLAGS += -Wno-extra-semi
-CFLAGS += -Wno-error=unused-variable -Wno-error=unused-function
+CFLAGS += -Wno-error=unused-variable -Wno-error=unused-function -Wno-error=implicit-fallthrough
 # TODO Declare DEBUG in Makefile
 CFLAGS += -g3 -DDEBUG -DSTRICT
 # Explicitly include the source directory.
