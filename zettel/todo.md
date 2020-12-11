@@ -5,7 +5,7 @@ TODO
   - ~~Load areas from the index~~
   - ~~Build a map from areas~~
   - ~~Clear depth buffer when rendering~~
-  - Render recursive transformations
+  - ~~Render recursive transformations~~
   - Render portals farthest to nearest
   - Make mouse sensitivity a configurable variable
   - Fisheye lens distortion

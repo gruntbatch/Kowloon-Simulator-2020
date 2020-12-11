@@ -282,7 +282,7 @@ static enum Continue loop(void) {
 
 	    {
 		rtBindVertexArray(scenery_vertex_array);
-		DrawSceneryRecursively(area, -1, Matrix4(1), 1);
+		DrawSceneryRecursively(area, -1, Matrix4(1), 2);
 		rtFlush();
 	    }
 	    

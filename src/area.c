@@ -464,6 +464,7 @@ void DrawSceneryRecursively(Area id, int portal_index, union Matrix4 transform, 
 	    struct Portal* in_portal = &network1->portals[out_portal->portal_index];
 
 	    union Matrix4 transform1 = MulM4(out_portal->transform_out, InvertM4(in_portal->transform_in));
+	    transform1 = MulM4(transform, transform1);
 
 	    /* TODO use out_portal->area_id */
 	    DrawSceneryRecursively(out_portal->destination,
