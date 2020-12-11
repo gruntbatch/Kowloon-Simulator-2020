@@ -10,6 +10,7 @@
 #include "player.h"
 #include "retained.h"
 #include "SDL_plus.h"
+#include "stdlib_plus.h"
 
 #define TITLE "Cyberpunk1997"
 
@@ -132,6 +133,7 @@ static float internal_aspect_ratio(void) {
 
 static struct Framebuffer internal_framebuffer;
 static GLuint internal_framebuffer_program;
+static GLuint64 scenery_vertex_array;
 
 static enum Continue create_renderer(void) {
     INTERNAL_RESOLUTION = calculate_internal_resolution(RESOLUTION);
@@ -148,18 +150,18 @@ static enum Continue create_renderer(void) {
     imInitTransformBuffer();
     imInitInternalVertexArray();
 
+    scenery_vertex_array = rtGenVertexArray();
+
     return UP;
 }
 
 static char* area_to_load;
-static GLuint64 scenery_vertex_array;
 
 static enum Continue load_area(void) {
     if (!area_to_load) {
 	return DOWN;
     }
 
-    scenery_vertex_array = rtGenVertexArray();
     rtBindVertexArray(scenery_vertex_array);
     Area area = LoadArea(area_to_load);
     rtFillBuffer();
@@ -170,7 +172,45 @@ static enum Continue load_area(void) {
     return UP;
 }
 
+static enum Continue load_areas_from_index(void) {
+    char * source = fopenstr(FromBase("assets/area.index"));
+    if (!source) {
+	Warn("Unable to open area index. Does it exist?\n");
+	return DOWN;
+    }
 
+    /* TODO Warn us if we're going over out vertex array bounds */
+    rtBindVertexArray(scenery_vertex_array);
+
+    char * line = source;
+    while (line) {
+	char * endline = strchr(line, '\n');
+	if (endline) {
+	    *endline = '\0';
+
+	    char filepath[96];
+
+	    int s = sscanf(line, "%s", filepath);
+	    
+	    if (s == 1) {
+		LoadArea(filepath);
+	    }
+	    
+	    line = endline + 1;
+	} else {
+	    line = NULL;
+	}
+    }
+    
+    free(source);
+
+    rtFillBuffer();
+
+    InstanceAreas(8);
+    LinkInstancedNetworks();
+
+    return UP;
+}
 
 static enum Continue loop(void) {
     GLuint vertex_color_program = LoadProgram(FromBase("assets/shaders/world_space.vert"),
@@ -179,7 +219,7 @@ static enum Continue loop(void) {
 					      FromBase("assets/shaders/textured_vertex_color.frag"));
     GLuint atlas_texture = LoadTexture(FromBase("assets/textures/atlas.png"));
 
-    SpawnPlayer(GetAreaInstance(0, 0));
+    SpawnPlayer(GetAreaInstance(0));
     
     /* Initialize matrices */
     imModel(Matrix4(1));
@@ -231,6 +271,7 @@ static enum Continue loop(void) {
 	    /* 			  7.0), */
 	    /* 		  Vector3(0, 0, 1), */
 	    /* 		  Vector3(0, 0, 1))); */
+	    /* imView(LookAt(Vector3(10, 10, 10), Vector3(0, 0, 0), Vector3(0, 0, 1))); */
 	    imProjection(Perspective(90, internal_aspect_ratio(), 0.1, 100.0));
 
 	    /* Draw the area */
@@ -241,7 +282,7 @@ static enum Continue loop(void) {
 
 	    {
 		rtBindVertexArray(scenery_vertex_array);
-		DrawSceneryRecursively(area, -1, Matrix4(1), 3);
+		DrawSceneryRecursively(area, -1, Matrix4(1), 1);
 		rtFlush();
 	    }
 	    
@@ -342,7 +383,7 @@ int main(int rgc, char* argv[]) {
 	if (got_strings(argv, "--area", 1, &area_to_load) == 1) {
 	    Rung(load_area, NULL);
 	} else {
-	    /* Rung(load_areas_from_index, NULL); */
+	    Rung(load_areas_from_index, NULL);
 	}
     }
     

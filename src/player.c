@@ -35,7 +35,7 @@ void PlayerWalkabout(float delta_time) {
     union Matrix4 yaw_matrix = MulM4(GetAgentRotation(player),
 				     Rotation(AxisAngle(Vector3(0, 0, 1), to_radians(yaw))));
 
-    union Vector2 move = GetMove();
+    union Vector2 move = Scale2(GetMove(), MOVEMENT_SPEED);
     union Vector2 goal = Transform4(InvertM4(yaw_matrix),
 				    Vector4(move.x, move.y, 0, 1)).xy;
 

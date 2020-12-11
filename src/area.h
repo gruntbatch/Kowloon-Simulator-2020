@@ -19,8 +19,9 @@ typedef union Area {
 
 Area LoadArea(const char* filepath);
 Area InstanceArea(const Area base);
+void InstanceAreas(int count);
 Area GetArea(u16 index);
-Area GetAreaInstance(u16 base, u16 instance);
+Area GetAreaInstance(u16 index);
 
 
 void LoadNavmesh(Area id, const char* filepath);

@@ -49,11 +49,32 @@ static u16 instance_count = 0;
 static Area instances[MAX_INSTANCED_AREA_COUNT];
 
 
-Area InstanceArea(const Area base) {
-    Area id = { .base=base.base, .instance=instance_count++ };
+static Area instance_area(u16 base) {
+    Area id = { .base=base, .instance=instance_count++ };
     instances[id.instance] = id;
     InstanceNetwork(id);
     return id;
+}
+
+
+Area InstanceArea(const Area area) {
+    return instance_area(area.base);
+}
+
+
+void InstanceAreas(int count) {
+    count = (MAX_INSTANCED_AREA_COUNT < count) ? MAX_INSTANCED_AREA_COUNT : count;
+
+    int i = 0;
+    /* Ensure each area is instanced at least once */
+    for (; i<count && i<area_count; i++) {
+	instance_area(i);
+    }
+
+    /* Randomly instance areas until count is reached */
+    for (; i<count; i++) {
+	instance_area(rand() % area_count);
+    }
 }
 
 
@@ -62,8 +83,8 @@ Area GetArea(u16 index) {
 }
 
 
-Area GetAreaInstance(u16 base, u16 instance) {
-    return (union Area) { .base=base, .instance=instance};
+Area GetAreaInstance(u16 index) {
+    return instances[index];
 }
 
 
