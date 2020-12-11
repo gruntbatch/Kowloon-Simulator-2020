@@ -4,6 +4,7 @@
 
 *.pyc
 
+.vscode/
 assets_bin/*
 !assets_bin/*.md
 assets.Config.mk
