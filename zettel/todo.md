@@ -6,6 +6,8 @@ TODO
   - ~~Build a map from areas~~
   - ~~Clear depth buffer when rendering~~
   - ~~Render recursive transformations~~
+  - ~~Export lights from Blender~~
+  - Render scenes using lights
   - Render portals farthest to nearest
   - Make mouse sensitivity a configurable variable
   - Fisheye lens distortion

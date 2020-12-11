@@ -62,7 +62,7 @@ def parse_area(collection, area):
                 area["navmesh"] = child
 
             elif token == "@portal":
-                area.setdefault("portals", list()).append(child)
+                area.setdefault("network", list()).append(child)
 
             elif token == "@scenery":
                 area.setdefault("scenery", list()).append(child)
@@ -107,10 +107,11 @@ def structure_data(data):
     data["meshes"] = dict()
     
     for area in data["areas"]:
-        area["scenery"] = structure_scenery(area.get("scenery", list()), data["meshes"])
         area["navmesh"] = structure_navmesh(area["navmesh"])
-        area["portals"] = structure_portals(area["portals"])
-        link_navmesh_to_portals(area["navmesh"], area["portals"])
+        area["network"] = structure_network(area["network"])
+        area["lights"] = list()
+        area["scenery"] = structure_scenery(area.get("scenery", list()), data["meshes"], area["lights"])
+        link_navmesh_to_network(area["navmesh"], area["network"])
 
     structure_meshes(data["meshes"])
 
@@ -156,20 +157,20 @@ def structure_navmesh(obj):
     return {"vertices": vertices, "triangles": triangles}
 
 
-def structure_portals(objs):
-    portals = list()
+def structure_network(objs):
+    network = list()
 
     for obj in objs:
-        portals.append({
+        network.append({
             "name": obj.name,
             "transform": obj.matrix_world,
             "width": round(obj.matrix_world.to_scale().x)
         })
 
-    return portals
+    return network
 
 
-def structure_scenery(objs, meshes):
+def structure_scenery(objs, meshes, lights):
     scenery = list()
 
     def recurse(transform, children):
@@ -186,6 +187,14 @@ def structure_scenery(objs, meshes):
                 })
                 meshes[child.data.name] = child.data
 
+            elif child.type == "LIGHT":
+                if child.data.type == "POINT":
+                    lights.append({
+                        "transform": transform @ child.matrix_world,
+                        "color": child.data.color,
+                        "energy": child.data.energy,
+                    })
+                    
             recurse(transform, child.children)
 
     recurse(mathutils.Matrix.Identity(4), objs)
@@ -198,11 +207,11 @@ def structure_meshes(meshes):
     
 
 
-def link_navmesh_to_portals(navmesh, portals):
+def link_navmesh_to_network(navmesh, network):
     def in_bounds(p, b):
         return abs(p.x) <= b.x and abs(p.y) <= b.y and abs(p.z) <= b.z
     
-    for portal_i, portal in enumerate(portals):
+    for portal_i, portal in enumerate(network):
         transform = portal["transform"]
         half_width = portal["width"] / 2.0
         bounds = transform.to_scale()
@@ -241,20 +250,19 @@ def export_data(cooked_dir, data):
 
         # TODO Save area info
 
-        with open(os.path.join(dirname, name + ".scenery"), "w", encoding="utf8", newline="\n") as f:
+        with open(os.path.join(dirname, name + ".lighting"), "w", encoding="utf8", newline="\n") as f:
             fw = f.write
 
             fw(INFO)
-            fw("# SCENERY\n")
+            fw("# LIGHTS\n")
             fw("\n")
 
-            fw("# [mesh name] [position] [rotation] [scale]\n")
-            for scenery in area["scenery"]:
-                p, r, s = scenery["transform"].decompose()
-                fw("{} ".format(scenery["mesh"]))
-                fw("{},{},{} ".format(*p.to_tuple()))
-                fw("{},{},{},{} ".format(r.x, r.y, r.z, r.w))
-                fw("{},{},{}\n".format(*s.to_tuple()))
+            fw("# [energy] [color] [position]\n")
+            for light in area["lights"]:
+                position, _, _ = light["transform"].decompose()
+                fw("{} ".format(light["energy"]))
+                fw("{},{},{} ".format(*light["color"]))
+                fw("{},{},{}\n".format(*position.to_tuple()))
 
         with open(os.path.join(dirname, name + ".navmesh"), "w", encoding="utf8", newline="\n") as f:
             fw = f.write
@@ -278,16 +286,31 @@ def export_data(cooked_dir, data):
             fw = f.write
 
             fw(INFO)
-            fw("# PORTALS\n")
+            fw("# NETWORK\n")
             fw("\n")
             
             fw("# [linked_triangle] [width] [position] [rotation]\n")
-            for portal in area["portals"]:
+            for portal in area["network"]:
                 p, r, s = portal["transform"].decompose()
                 fw("{} ".format(portal["triangle"]))
                 fw("{} ".format(int(round(s.x))))
                 fw("{},{},{} ".format(*p.to_tuple()))
                 fw("{},{},{},{}\n".format(r.x, r.y, r.z, r.w))
+
+        with open(os.path.join(dirname, name + ".scenery"), "w", encoding="utf8", newline="\n") as f:
+            fw = f.write
+
+            fw(INFO)
+            fw("# SCENERY\n")
+            fw("\n")
+
+            fw("# [mesh name] [position] [rotation] [scale]\n")
+            for scenery in area["scenery"]:
+                p, r, s = scenery["transform"].decompose()
+                fw("{} ".format(scenery["mesh"]))
+                fw("{},{},{} ".format(*p.to_tuple()))
+                fw("{},{},{},{} ".format(r.x, r.y, r.z, r.w))
+                fw("{},{},{}\n".format(*s.to_tuple()))
 
         print("DONE")
 
