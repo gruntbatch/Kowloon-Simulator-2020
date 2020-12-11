@@ -215,7 +215,7 @@ static enum Continue load_areas_from_index(void) {
 static enum Continue loop(void) {
     GLuint vertex_color_program = LoadProgram(FromBase("assets/shaders/world_space.vert"),
 					      FromBase("assets/shaders/vertex_color.frag"));
-    GLuint little_light_program = LoadProgram(FromBase("assets/shaders/little_light.vert"),
+    GLuint little_light_program = LoadProgram(FromBase("assets/shaders/multi_lights.vert"),
 					      FromBase("assets/shaders/textured_vertex_color.frag"));
     GLuint atlas_texture = LoadTexture(FromBase("assets/textures/atlas.png"));
 

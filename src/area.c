@@ -506,6 +506,8 @@ void DrawScenery(Area id) {
 
 
 void DrawSceneryTransformed(Area id, union Matrix4 transform) {
+    struct LightGrid* light_grid = &light_grids[id.base];
+    imSetLights(light_grid);
     struct Scenery* scenery = &sceneries[id.base];
     for (int i=0; i<scenery->static_count; ++i) {
 	/* TODO If we transformed the view instead of the model
