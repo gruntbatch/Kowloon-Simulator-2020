@@ -9,7 +9,9 @@ if __name__ == "__main__":
         if ext in {".navmesh", ".network", ".scenery"}:
             areas.add(f)
 
-    with open(filename, "w", encoding="utf8", newline="\n") as f:
+    # TODO Convert scripts to Python3
+    # with open(filename, mode="w", encoding="utf8", newline="\n") as f:
+    with open(filename, "w") as f:
         for area in areas:
             f.write(os.path.join("assets", "areas", area))
             f.write("\n")

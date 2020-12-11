@@ -55,5 +55,8 @@ $(BUILD_DIR)\\%.obj: $(SRC_DIR)\%.c
 
 .PHONY: clean_exe
 clean_exe:
-	del $(O_FILES)
-	del $(EXE_FILE)
+	del $(O_FILES) 2>nul
+	del $(BIN_DIR)\*.dll 2>nul
+	del $(BIN_DIR)\*.ilk 2>nul
+	del $(BIN_DIR)\*.pdb 2>nul
+	del $(EXE_FILE) 2>nul

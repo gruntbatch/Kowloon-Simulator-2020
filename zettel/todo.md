@@ -16,6 +16,8 @@ TODO
   - Play ambient sound effects
   - Play dimensional sound effects
   - Convert the engine to a queued jobs/worker system
+  - Convert all python scripts to Python3
+  - Get rid of all the `2>nul` nonsense on Windows Makefiles
   
 World Generation
 ----------------

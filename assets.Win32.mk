@@ -34,18 +34,28 @@ find_assets = $(patsubst $(1)\\%,%,$(call find,$(1),$(2)))
 raw_to_cooked = $(patsubst %.$(2),$(3)\\%.$(4),$(call find_assets,$(1),$(2)))
 
 
-ASSET_FILES =
-ASSET_FILES += $(call raw_to_cooked,$(RAW_BIN_DIR),blend,$(COOKED_DIR),blend_sentinel)
-ASSET_FILES += $(call raw_to_cooked,$(RAW_DIR),frag,$(COOKED_DIR),frag)
-ASSET_FILES += $(call raw_to_cooked,$(RAW_BIN_DIR),png,$(COOKED_DIR),png)
-ASSET_FILES += $(call raw_to_cooked,$(RAW_DIR),vert,$(COOKED_DIR),vert)
+AREA_INDEX = $(COOKED_DIR)\area.index
+BLEND_SENTINEL_FILES += $(call raw_to_cooked,$(RAW_BIN_DIR),blend,$(COOKED_DIR),blend_sentinel)
+FRAG_FILES += $(call raw_to_cooked,$(RAW_DIR),frag,$(COOKED_DIR),frag)
+PNG_FILES += $(call raw_to_cooked,$(RAW_BIN_DIR),png,$(COOKED_DIR),png)
+VERT_FILES += $(call raw_to_cooked,$(RAW_DIR),vert,$(COOKED_DIR),vert)
 
+
+ASSET_FILES = $(AREA_INDEX)
+ASSET_FILES += $(BLEND_SENTINEL_FILES)
+ASSET_FILES += $(FRAG_FILES)
+ASSET_FILES += $(PNG_FILES)
+ASSET_FILES += $(VERT_FILES)
+
+
+$(COOKED_DIR)\area.index: $(BLEND_SENTINEL_FILES) tools\area_indexer.py
+	if not exist $(@D) mkdir $(@D)
+	python tools/area_indexer.py $@
 
 $(COOKED_DIR)\\%.blend_sentinel: $(RAW_BIN_DIR)\%.blend $(IO_KOWL)
 	if not exist $(@D) mkdir $(@D)
 	$(BLENDER_WIN32) -b --factory-startup $< --python tools\io_kowl\area.py -- $(COOKED_DIR)
 	type nul > $@
-
 
 $(COOKED_DIR)\\%.frag: $(RAW_DIR)\%.frag $(GLSL_FILES) tools\glsl_includer.py
 	if not exist $(@D) mkdir $(@D)
@@ -54,7 +64,7 @@ $(COOKED_DIR)\\%.frag: $(RAW_DIR)\%.frag $(GLSL_FILES) tools\glsl_includer.py
 
 $(COOKED_DIR)\\%.png: $(RAW_BIN_DIR)\%.png
 	if not exist $(@D) mkdir $(@D)
-	xcopy $< $@ /D
+	xcopy /I /D $< $@*
 
 $(COOKED_DIR)\\%.vert: $(RAW_DIR)\%.vert $(GLSL_FILES) tools\glsl_includer.py
 	if not exist $(@D) mkdir $(@D)
@@ -65,4 +75,5 @@ assets: $(ASSET_FILES)
 
 .PHONY: clean_assets
 clean_assets:
-	del $(ASSET_FILES)
+#	del $(ASSET_FILES) 2>nul
+	rmdir /S /Q $(COOKED_DIR) 2>nul
