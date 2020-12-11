@@ -335,7 +335,8 @@ void DrawNetwork(Area id) {
     struct Network* network = get_network(id);
     imColor3ub(0, 100, 50);
     for (int i=0; i<network->portal_count; ++i) {
-	imModel(network->portals[i].transform_in);
+	struct Portal* out_portal = &network->portals[i];
+	imModel(out_portal->transform_in);
 	imBegin(GL_LINE_LOOP); {
 	    imVertex2f(-1, -1);
 	    imVertex2f(1, -1);
@@ -419,6 +420,8 @@ void DrawScenery(Area id) {
 void DrawSceneryTransformed(Area id, union Matrix4 transform) {
     struct Scenery* scenery = &sceneries[id.base];
     for (int i=0; i<scenery->static_count; ++i) {
+	/* TODO If we transformed the view instead of the model
+	   matrix, we could be more performant */
 	imModel(MulM4(transform, scenery->statics[i].transform));
 	rtDrawArrays(GL_TRIANGLES, scenery->statics[i].mesh);
     }
@@ -436,13 +439,13 @@ void DrawSceneryRecursively(Area id, int portal_index, union Matrix4 transform, 
 	    }
 
 	    struct Portal* out_portal = &network->portals[i];
-	    struct Portal* in_portal = &network->portals[out_portal->portal_index];
-	    
+	    struct Network* network1 = get_network(out_portal->destination);
+	    struct Portal* in_portal = &network1->portals[out_portal->portal_index];
+
 	    union Matrix4 transform1 = MulM4(out_portal->transform_out, InvertM4(in_portal->transform_in));
-	    transform1 = MulM4(transform, transform1);
 
 	    /* TODO use out_portal->area_id */
-	    DrawSceneryRecursively(id,
+	    DrawSceneryRecursively(out_portal->destination,
 				   out_portal->portal_index,
 				   transform1,
 				   depth - 1);
@@ -567,18 +570,23 @@ void MoveAgent(Agent agent_id, union Vector2 goal, float delta_time) {
 		struct Network* network = get_network(agent->area_id);
 		struct Portal* out_portal = &network->portals[cell->connection_index[hit.edge_index]];
 		/* TODO Change the agent's area id */
+		network = get_network(out_portal->destination);
 		struct Portal* in_portal = &network->portals[out_portal->portal_index];
 
 		union Matrix4 transform = MulM4(in_portal->transform_in, InvertM4(out_portal->transform_out));
 		agent->position = Transform4(transform, Vector4(position.x, position.y, 0, 1)).xy;
 
-		/* We do _not_ want to translate acceleration and velocity, only scale and rotate them */
+		/* We do _not_ want to translate acceleration and
+		   velocity, only scale and rotate them */
 		transform.vectors[3] = Vector4(0, 0, 0, 1);
 		agent->acceleration = Transform4(transform, Vector4(acceleration.x, acceleration.y, 0, 1)).xy;
 		agent->velocity = Transform4(transform, Vector4(velocity.x, velocity.y, 0, 1)).xy;
 
-		agent->rotation = MulM4(transform, agent->rotation);
+		/* We invert the transform here. I'm not sure why, but
+		   it seems to work */
+		agent->rotation = MulM4(agent->rotation, InvertM4(transform));
 
+		agent->area_id = out_portal->destination;
 		agent->cell_index = in_portal->cell_index;
 		break;
 	    }
