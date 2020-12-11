@@ -19,6 +19,13 @@ static int is_invalid(Area area) {
 
 Area LoadArea(const char* filepath) {
     Area id = { .base=area_count++, .instance=MAX_INSTANCED_AREA_COUNT };
+
+    {
+	char light_grid_filepath[256] = { 0 };
+	strcpy(light_grid_filepath, filepath);
+	strcat(light_grid_filepath, ".light_grid");
+	LoadLightGrid(id, FromBase(light_grid_filepath));
+    }
     
     {
 	char navmesh_filepath[256] = { 0 };
@@ -85,6 +92,66 @@ Area GetArea(u16 index) {
 
 Area GetAreaInstance(u16 index) {
     return instances[index];
+}
+
+
+struct Light {
+    union Vector3 color;
+    float energy;
+    union Vector3 position;
+    float distance;
+};
+
+
+#define MAX_LIGHT_COUNT 8
+
+
+struct LightGrid {
+    int light_count;
+    int _x, _y, _z;
+    struct Light lights[MAX_LIGHT_COUNT];
+};
+
+
+static struct LightGrid light_grids[MAX_BASE_AREA_COUNT];
+
+
+void LoadLightGrid(Area id, const char* filepath) {
+    char* source = fopenstr(filepath);
+    if (!source) {
+	Warn("Unable to open `%s`. Does it exist?\n", filepath);
+	return;
+    }
+
+    struct LightGrid* light_grid = &light_grids[id.base];
+
+    char* line = source;
+    while (line) {
+	char * endline = strchr(line, '\n');
+	if (endline) {
+	    *endline = '\0';
+
+	    struct Light light;
+
+	    int s = sscanf(line,
+			   "%f "
+			   "%f,%f,%f "
+			   "%f,%f,%f",
+			   &light.energy,
+			   &light.color.r, &light.color.g, &light.color.b,
+			   &light.position.x, &light.position.y, &light.position.z);
+	    
+	    if (s == 7) {
+		light_grid->lights[light_grid->light_count++] = light;
+	    }
+	    
+	    line = endline + 1;
+	} else {
+	    line = NULL;
+	}
+    }
+    
+    free(source);
 }
 
 

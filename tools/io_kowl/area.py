@@ -250,7 +250,7 @@ def export_data(cooked_dir, data):
 
         # TODO Save area info
 
-        with open(os.path.join(dirname, name + ".lighting"), "w", encoding="utf8", newline="\n") as f:
+        with open(os.path.join(dirname, name + ".light_grid"), "w", encoding="utf8", newline="\n") as f:
             fw = f.write
 
             fw(INFO)
@@ -261,6 +261,7 @@ def export_data(cooked_dir, data):
             for light in area["lights"]:
                 position, _, _ = light["transform"].decompose()
                 fw("{} ".format(light["energy"]))
+                
                 fw("{},{},{} ".format(*light["color"]))
                 fw("{},{},{}\n".format(*position.to_tuple()))
 

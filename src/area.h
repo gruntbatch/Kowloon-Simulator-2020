@@ -24,6 +24,9 @@ Area GetArea(u16 index);
 Area GetAreaInstance(u16 index);
 
 
+void LoadLightGrid(Area id, const char* filepath);
+
+
 void LoadNavmesh(Area id, const char* filepath);
 void DrawNavmesh(Area id);
 
