@@ -16,6 +16,9 @@ void imInitInternalVertexArray(void);
 void imBindVertexArray(void);
 
 
+void imClear(GLbitfield mask);
+
+
 void imModel(union Matrix4 model);
 void imView(union Matrix4 view);
 void imProjection(union Matrix4 projection);

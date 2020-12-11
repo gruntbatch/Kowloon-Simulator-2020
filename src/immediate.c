@@ -70,12 +70,13 @@ void imBindVertexArray(void) {
 enum CommandType {
     COMMAND_ACTIVE_TEXTURE,
     COMMAND_ANY,
+    COMMAND_BIND_TEXTURE,
+    COMMAND_CLEAR,
     COMMAND_INSTANCED_PRIMITIVE,
     COMMAND_MODEL,
     COMMAND_PRIMITIVE,
     COMMAND_PROGRAM,
     COMMAND_PROJECTION,
-    COMMAND_BIND_TEXTURE,
     COMMAND_VIEW,
 };
 
@@ -86,6 +87,9 @@ struct Command {
         struct {
             GLenum texture;
         } active_texture;
+	struct {
+	    GLbitfield mask;
+	} clear;
         union Matrix4 model;
         struct {
             GLuint vertex_array;
@@ -128,6 +132,16 @@ static enum CommandType current_mode = COMMAND_ANY;
     if (command_count < COMMAND_MAX_COUNT) {            \
         commands[command_count++] = current_command;     \
     }
+
+
+void imClear(GLbitfield mask) {
+    MODE_MUST_BE(COMMAND_ANY);
+
+    current_command.type = COMMAND_CLEAR;
+    current_command.clear.mask = mask;
+
+    ADVANCE_COMMAND();
+}
 
 
 void imModel(union Matrix4 model) {
@@ -503,6 +517,13 @@ void rtFlush(void) {
             glLogErrors();
         case COMMAND_ANY:
             break;
+        case COMMAND_BIND_TEXTURE:
+            glBindTexture(command.bind_texture.target, command.bind_texture.id);
+            glLogErrors();
+            break;
+	case COMMAND_CLEAR:
+	    glClear(command.clear.mask);
+	    break;
         case COMMAND_INSTANCED_PRIMITIVE:
             glLogErrors();
             glDrawArraysInstanced(command.primitive.mode,
@@ -529,10 +550,6 @@ void rtFlush(void) {
             break;
         case COMMAND_PROJECTION:
             set_matrix(command.projection, 0);
-            glLogErrors();
-            break;
-        case COMMAND_BIND_TEXTURE:
-            glBindTexture(command.bind_texture.target, command.bind_texture.id);
             glLogErrors();
             break;
         case COMMAND_VIEW:

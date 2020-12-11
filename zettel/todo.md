@@ -2,8 +2,11 @@ TODO
 ====
 
   - ~~Create an index of area names~~
-  - Load areas from the index
-  - Build a map from areas
+  - ~~Load areas from the index~~
+  - ~~Build a map from areas~~
+  - ~~Clear depth buffer when rendering~~
+  - Render recursive transformations
+  - Render portals farthest to nearest
   - Make mouse sensitivity a configurable variable
   - Fisheye lens distortion
   - Some kind of call back when passing between areas?

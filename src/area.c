@@ -472,6 +472,7 @@ void DrawSceneryRecursively(Area id, int portal_index, union Matrix4 transform, 
 				   depth - 1);
 	}
     }
+    imClear(GL_DEPTH_BUFFER_BIT);
     DrawSceneryTransformed(id, transform);
 }
 
