@@ -9,7 +9,7 @@ TODO
   - ~~Export lights from Blender~~
   - ~~Render scenes using lights~~
   - ~~Instead of transforming objects, transform the view~~
-  - Tune light falloff to reflect Blender
+  - ~~Tune light falloff to reflect Blender~~
   - Render portals farthest to nearest
   - Make mouse sensitivity a configurable variable
   - Fisheye lens distortion
