@@ -277,20 +277,7 @@ static enum Continue loop(void) {
 		rtBindVertexArray(scenery_vertex_array);
 		DrawSceneryRecursively(area, -1, GetPlayerView(), 2);
 		rtFlush();
-	    }
-	    
-	    /* Draw the navigation mesh */
-	    imUseProgram(vertex_color_program);
-
-	    {
-		glDepthMask(GL_FALSE);
-		imBindVertexArray();
-		DrawNavmesh(area);
-		DrawNetwork(area);
-		DrawPlayer(1.0);
-		imFlush();
-		glDepthMask(GL_TRUE);
-	    }
+	    }	    
 	}
 
 	/* Draw to the window's default framebuffer */
