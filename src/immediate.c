@@ -542,6 +542,9 @@ void rtFillBuffer(void) {
 void rtFlush(void) {
     MODE_MUST_BE(COMMAND_ANY);
 
+    GLuint used_program = -1;
+    GLuint bound_texture = -1;
+
     glLogErrors();
     
     GLint i;
@@ -550,15 +553,16 @@ void rtFlush(void) {
 
         switch (command.type) {
         case COMMAND_ACTIVE_TEXTURE:
-            glLogErrors();
             glActiveTexture(command.active_texture.texture);
             glLogErrors();
 	    break;
         case COMMAND_ANY:
             break;
         case COMMAND_BIND_TEXTURE:
-            glBindTexture(command.bind_texture.target, command.bind_texture.id);
-            glLogErrors();
+	    if (bound_texture != command.bind_texture.id) {
+		glBindTexture(command.bind_texture.target, command.bind_texture.id);
+	    }
+	    glLogErrors();
             break;
 	case COMMAND_CLEAR:
 	    glClear(command.clear.mask);
@@ -584,8 +588,10 @@ void rtFlush(void) {
             glLogErrors();
             break;
         case COMMAND_PROGRAM:
-            glUseProgram(command.program.id);
-            glLogErrors();
+	    if (used_program != command.program.id) {
+		glUseProgram(command.program.id);
+	    }
+	    glLogErrors();
             break;
         case COMMAND_PROJECTION:
             set_matrix(command.projection, 0);
@@ -644,7 +650,6 @@ GLuint LoadProgram(const char* vertex_filepath, const char* fragment_filepath) {
 
     GLuint lights_index = glGetUniformBlockIndex(id, LIGHTS.name);
     if (lights_index != GL_INVALID_INDEX) {
-	Log("MATRIX %u LIGHTS %u\n", matrix_index, lights_index);
 	glUniformBlockBinding(id, lights_index, LIGHTS.bind);
     }
 
