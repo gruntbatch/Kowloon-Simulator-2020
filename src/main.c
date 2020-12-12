@@ -325,6 +325,8 @@ static enum Continue loop(void) {
 }   
 
 int main(int rgc, char* argv[]) {
+    srand(SDL_GetPerformanceCounter());
+    
     {
 	if (got_flag(argv, "--version") == 1) {
 	    printf("TODO VERSION\n");
