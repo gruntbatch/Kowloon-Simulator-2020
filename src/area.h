@@ -1,12 +1,20 @@
 #pragma once
 
 
+#include "GL_plus.h"
+#include "ladder.h"
 #include "mathematics.h"
 #include "numbers.h"
 
 
 #define MAX_BASE_AREA_COUNT 8
 #define MAX_INSTANCED_AREA_COUNT 32
+
+
+extern GLuint64 SCENERY_VERTEX_ARRAY;
+
+
+enum Continue CreateAreaMeshes(void);
 
 
 typedef union Area {

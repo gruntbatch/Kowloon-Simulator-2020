@@ -106,6 +106,9 @@ static enum Continue create_gl_context(void) {
     }
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
 
     glClearColor(0.1, 0.1, 0.1, 1.0);
 
@@ -133,7 +136,6 @@ static float internal_aspect_ratio(void) {
 
 static struct Framebuffer internal_framebuffer;
 static GLuint internal_framebuffer_program;
-static GLuint64 scenery_vertex_array;
 
 static enum Continue create_renderer(void) {
     INTERNAL_RESOLUTION = calculate_internal_resolution(RESOLUTION);
@@ -150,8 +152,6 @@ static enum Continue create_renderer(void) {
     imInitTransformBuffer();
     imInitInternalVertexArray();
 
-    scenery_vertex_array = rtGenVertexArray();
-
     return UP;
 }
 
@@ -162,7 +162,7 @@ static enum Continue load_area(void) {
 	return DOWN;
     }
 
-    rtBindVertexArray(scenery_vertex_array);
+    rtBindVertexArray(SCENERY_VERTEX_ARRAY);
     Area area = LoadArea(area_to_load);
     rtFillBuffer();
 
@@ -180,7 +180,7 @@ static enum Continue load_areas_from_index(void) {
     }
 
     /* TODO Warn us if we're going over out vertex array bounds */
-    rtBindVertexArray(scenery_vertex_array);
+    rtBindVertexArray(SCENERY_VERTEX_ARRAY);
 
     char * line = source;
     while (line) {
@@ -213,10 +213,6 @@ static enum Continue load_areas_from_index(void) {
 }
 
 static enum Continue loop(void) {
-    GLuint vertex_color_program = LoadProgram(FromBase("assets/shaders/world_space.vert"),
-					      FromBase("assets/shaders/vertex_color.frag"));
-    GLuint little_light_program = LoadProgram(FromBase("assets/shaders/multi_lights.vert"),
-					      FromBase("assets/shaders/textured_vertex_color.frag"));
     GLuint atlas_texture = LoadTexture(FromBase("assets/textures/atlas.png"));
 
     SpawnPlayer(GetAreaInstance(0));
@@ -270,13 +266,14 @@ static enum Continue loop(void) {
 	    /* Draw the area */
 	    imModel(Matrix4(1));
 
-	    imUseProgram(little_light_program);
 	    imBindTexture(GL_TEXTURE_2D, atlas_texture);
 
 	    {
-		rtBindVertexArray(scenery_vertex_array);
+		/* glEnable(GL_STENCIL_TEST); */
+		/* rtBindVertexArray(SCENERY_VERTEX_ARRAY); */
 		DrawSceneryRecursively(area, -1, GetPlayerView(), 2);
-		rtFlush();
+		/* rtFlush(); */
+		/* glDisable(GL_STENCIL_TEST); */
 	    }	    
 	}
 
@@ -358,6 +355,7 @@ int main(int rgc, char* argv[]) {
     
     Rung(create_gl_context, delete_gl_context);
     Rung(create_renderer, NULL);
+    Rung(CreateAreaMeshes, NULL);
 
     {
 	if (got_strings(argv, "--area", 1, &area_to_load) == 1) {

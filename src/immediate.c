@@ -95,6 +95,8 @@ enum CommandType {
     COMMAND_ANY,
     COMMAND_BIND_TEXTURE,
     COMMAND_CLEAR,
+    COMMAND_DRAW_COLOR,
+    COMMAND_DRAW_STENCIL,
     COMMAND_INSTANCED_PRIMITIVE,
     COMMAND_MODEL,
     COMMAND_PRIMITIVE,
@@ -166,6 +168,24 @@ void imClear(GLbitfield mask) {
 
     current_command.type = COMMAND_CLEAR;
     current_command.clear.mask = mask;
+
+    ADVANCE_COMMAND();
+}
+
+
+void imDrawColor(void) {
+    MODE_MUST_BE(COMMAND_ANY);
+
+    current_command.type = COMMAND_DRAW_COLOR;
+
+    ADVANCE_COMMAND();
+}
+
+
+void imDrawStencil(void) {
+    MODE_MUST_BE(COMMAND_ANY);
+
+    current_command.type = COMMAND_DRAW_STENCIL;
 
     ADVANCE_COMMAND();
 }
@@ -567,6 +587,18 @@ void rtFlush(void) {
             break;
 	case COMMAND_CLEAR:
 	    glClear(command.clear.mask);
+	    break;
+	case COMMAND_DRAW_COLOR:
+	    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	    glDepthMask(GL_TRUE);
+	    glStencilFunc(GL_EQUAL, 1, 0xFF);
+	    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	    break;
+	case COMMAND_DRAW_STENCIL:
+	    glColorMask(GL_FALSE,GL_FALSE, GL_FALSE, GL_FALSE);
+	    glDepthMask(GL_FALSE);
+	    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	    break;
         case COMMAND_INSTANCED_PRIMITIVE:
             glLogErrors();

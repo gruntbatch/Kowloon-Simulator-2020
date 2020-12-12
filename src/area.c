@@ -10,6 +10,35 @@
 #include "string.h"
 
 
+GLuint64 SCENERY_VERTEX_ARRAY;
+static GLuint64 portal_mesh;
+static GLuint lit_program;
+static GLuint stencil_program;
+
+
+enum Continue CreateAreaMeshes(void) {
+    SCENERY_VERTEX_ARRAY = rtGenVertexArray();
+
+    rtBindVertexArray(SCENERY_VERTEX_ARRAY);
+    rtBegin(); {
+	/* TODO Improve this */
+	/* Why didn't my solid object work? */
+	/* Y value should be greater, I think */
+	imVertex3f(-1, 0.1, -1);
+	imVertex3f( 1, 0.1, -1);
+	imVertex3f(-1, 0.1,  3);
+	imVertex3f( 1, 0.1,  3);
+    } portal_mesh = rtEnd();
+
+    lit_program = LoadProgram(FromBase("assets/shaders/vertex_lighting.vert"),
+			      FromBase("assets/shaders/textured_vertex_color.frag"));
+    stencil_program = LoadProgram(FromBase("assets/shaders/world_space.vert"),
+				  FromBase("assets/shaders/vertex_color.frag"));
+
+    return UP;
+}
+
+
 static u16 area_count = 0;
 const Area INVALID_AREA = { .base=MAX_BASE_AREA_COUNT, .instance=MAX_INSTANCED_AREA_COUNT };
 static int is_invalid(Area area) {
@@ -497,6 +526,7 @@ void LoadScenery(Area id, const char* filepath) {
 
 
 void DrawScenery(Area id) {
+    imUseProgram(lit_program);
     struct LightGrid* light_grid = &light_grids[id.base];
     imSetLights(light_grid);
     struct Scenery* scenery = &sceneries[id.base];
@@ -507,9 +537,10 @@ void DrawScenery(Area id) {
 }
 
 
+#if 0
 void DrawSceneryRecursively(Area id, int portal_index, union Matrix4 view, int depth) {
+    struct Network* network = get_network(id);
     if (depth) {
-	struct Network* network = get_network(id);
 	for (int i=0; i<network->portal_count; i++) {
 	    if (i == portal_index) {
 		continue;
@@ -522,6 +553,11 @@ void DrawSceneryRecursively(Area id, int portal_index, union Matrix4 view, int d
 	    union Matrix4 destination_view = MulM4(out_portal->transform_out, InvertM4(in_portal->transform_in));
 	    destination_view = MulM4(view, destination_view);
 
+	    /* imView(view); */
+	    /* imModel(out_portal->transform_out); */
+	    /* imUseProgram(stencil_program); */
+	    /* rtDrawArrays(GL_TRIANGLE_STRIP, portal_mesh); */
+
 	    DrawSceneryRecursively(out_portal->destination,
 				   out_portal->portal_index,
 				   destination_view,
@@ -529,8 +565,87 @@ void DrawSceneryRecursively(Area id, int portal_index, union Matrix4 view, int d
 	}
     }
     imView(view);
-    imClear(GL_DEPTH_BUFFER_BIT);
+    imClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    if (0 <= portal_index && portal_index <= network->portal_count) {
+	struct Portal* in_portal = &network->portals[portal_index];
+	imModel(in_portal->transform_in);
+	imUseProgram(stencil_program);
+	imDrawStencil();
+	rtDrawArrays(GL_TRIANGLE_STRIP, portal_mesh);
+    }
+    imDrawColor();
     DrawScenery(id);
+}
+#endif
+
+
+static void draw_children(Area id, int portal_index, union Matrix4 view, int depth) {
+    if (depth) {
+	struct Network* network = get_network(id);
+	for (int i=0; i<network->portal_count; i++) {
+	    if (i == portal_index) {
+		continue;
+	    }
+	    
+	    struct Portal* out_portal = &network->portals[i];
+	    struct Network* destination = get_network(out_portal->destination);
+	    struct Portal* in_portal = &destination->portals[out_portal->portal_index];
+
+	    union Matrix4 destination_view = MulM4(out_portal->transform_out,
+						   InvertM4(in_portal->transform_in));
+	    destination_view = MulM4(view, destination_view);
+
+	    draw_children(out_portal->destination,
+			  out_portal->portal_index,
+			  destination_view,
+			  depth - 1);
+
+	    imClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+	    glDepthMask(GL_FALSE);
+	    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+	    imView(destination_view);
+	    imModel(in_portal->transform_in);
+	    imUseProgram(stencil_program);
+	    rtDrawArrays(GL_TRIANGLE_STRIP, portal_mesh);
+	    rtFlush();
+
+	    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	    glDepthMask(GL_TRUE);
+	    glStencilFunc(GL_EQUAL, 1, 0xFF);
+	    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+	    imUseProgram(lit_program);
+	    DrawScenery(out_portal->destination);
+	    rtFlush();
+	}
+    }
+}
+
+
+void DrawSceneryRecursively(Area id, int portal_index, union Matrix4 view, int depth) {
+    rtBindVertexArray(SCENERY_VERTEX_ARRAY);
+
+    glEnable(GL_STENCIL_TEST);
+    draw_children(id, portal_index, view, depth);
+    glDisable(GL_STENCIL_TEST);
+
+    /* glStencilFunc(GL_NOTEQUAL, 1, 0xFF); */
+    imView(view);
+    imClear(GL_DEPTH_BUFFER_BIT);
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    struct Network* network = get_network(id);
+    for (int i=0; i<network->portal_count; i++) {
+	imModel(network->portals[i].transform_out);
+	rtDrawArrays(GL_TRIANGLE_STRIP, portal_mesh);
+    }
+    rtFlush();
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    DrawScenery(id);
+    rtFlush();
 }
 
 
