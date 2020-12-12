@@ -105,6 +105,8 @@ static enum Continue create_gl_context(void) {
       return DOWN;
     }
 
+    int swap = SDL_GL_SetSwapInterval(1);
+
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
