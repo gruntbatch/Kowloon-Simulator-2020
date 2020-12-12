@@ -3,6 +3,7 @@
 .*~
 
 *.pyc
+*.trace
 
 .vscode/
 assets_bin/*
