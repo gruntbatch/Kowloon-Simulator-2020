@@ -560,6 +560,7 @@ void rtFlush(void) {
             break;
         case COMMAND_BIND_TEXTURE:
 	    if (bound_texture != command.bind_texture.id) {
+		bound_texture = command.bind_texture.id;
 		glBindTexture(command.bind_texture.target, command.bind_texture.id);
 	    }
 	    glLogErrors();
@@ -589,6 +590,7 @@ void rtFlush(void) {
             break;
         case COMMAND_PROGRAM:
 	    if (used_program != command.program.id) {
+		used_program = command.program.id;
 		glUseProgram(command.program.id);
 	    }
 	    glLogErrors();
