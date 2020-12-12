@@ -497,6 +497,8 @@ void LoadScenery(Area id, const char* filepath) {
 
 
 void DrawScenery(Area id) {
+    struct LightGrid* light_grid = &light_grids[id.base];
+    imSetLights(light_grid);
     struct Scenery* scenery = &sceneries[id.base];
     for (int i=0; i<scenery->static_count; ++i) {
 	imModel(scenery->statics[i].transform);
@@ -505,45 +507,30 @@ void DrawScenery(Area id) {
 }
 
 
-void DrawSceneryTransformed(Area id, union Matrix4 transform) {
-    struct LightGrid* light_grid = &light_grids[id.base];
-    imSetLights(light_grid);
-    struct Scenery* scenery = &sceneries[id.base];
-    for (int i=0; i<scenery->static_count; ++i) {
-	/* TODO If we transformed the view instead of the model
-	   matrix, we could be more performant */
-	imModel(MulM4(transform, scenery->statics[i].transform));
-	rtDrawArrays(GL_TRIANGLES, scenery->statics[i].mesh);
-    }
-}
-
-
-void DrawSceneryRecursively(Area id, int portal_index, union Matrix4 transform, int depth) {
-    /* TODO Clear depth buffer */
+void DrawSceneryRecursively(Area id, int portal_index, union Matrix4 view, int depth) {
     if (depth) {
 	struct Network* network = get_network(id);
 	for (int i=0; i<network->portal_count; i++) {
-	/* for (int i=0; i<1; i++) { */
 	    if (i == portal_index) {
 		continue;
 	    }
 
 	    struct Portal* out_portal = &network->portals[i];
-	    struct Network* network1 = get_network(out_portal->destination);
-	    struct Portal* in_portal = &network1->portals[out_portal->portal_index];
+	    struct Network* destination = get_network(out_portal->destination);
+	    struct Portal* in_portal = &destination->portals[out_portal->portal_index];
 
-	    union Matrix4 transform1 = MulM4(out_portal->transform_out, InvertM4(in_portal->transform_in));
-	    transform1 = MulM4(transform, transform1);
+	    union Matrix4 destination_view = MulM4(out_portal->transform_out, InvertM4(in_portal->transform_in));
+	    destination_view = MulM4(view, destination_view);
 
-	    /* TODO use out_portal->area_id */
 	    DrawSceneryRecursively(out_portal->destination,
 				   out_portal->portal_index,
-				   transform1,
+				   destination_view,
 				   depth - 1);
 	}
     }
+    imView(view);
     imClear(GL_DEPTH_BUFFER_BIT);
-    DrawSceneryTransformed(id, transform);
+    DrawScenery(id);
 }
 
 

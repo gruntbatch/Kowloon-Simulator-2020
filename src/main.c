@@ -265,13 +265,6 @@ static enum Continue loop(void) {
 	
 	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	    imView(GetPlayerView());
-	    /* imView(LookAt(Vector3(10.0 * sinf(current_time / 10.0), */
-	    /* 			  10.0 * cosf(current_time / 10.0), */
-	    /* 			  7.0), */
-	    /* 		  Vector3(0, 0, 1), */
-	    /* 		  Vector3(0, 0, 1))); */
-	    /* imView(LookAt(Vector3(10, 10, 10), Vector3(0, 0, 0), Vector3(0, 0, 1))); */
 	    imProjection(Perspective(90, internal_aspect_ratio(), 0.1, 100.0));
 
 	    /* Draw the area */
@@ -282,7 +275,7 @@ static enum Continue loop(void) {
 
 	    {
 		rtBindVertexArray(scenery_vertex_array);
-		DrawSceneryRecursively(area, -1, Matrix4(1), 2);
+		DrawSceneryRecursively(area, -1, GetPlayerView(), 2);
 		rtFlush();
 	    }
 	    
