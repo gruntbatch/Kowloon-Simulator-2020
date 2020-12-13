@@ -10,6 +10,7 @@ import mathutils
 import mesh
 import os
 import pprint
+import re
 
 
 VERSION = (0, 1, 0)
@@ -23,99 +24,146 @@ PORTAL = 2
 
 def export_area(cooked_dir):
     data = dict()
-    parse_areas(bpy.context.scene.collection, data.setdefault("areas", list()))
+    search_children(bpy.context.scene.collection, look_for_areas, data)
     structure_data(data)
     export_data(cooked_dir, data)
 
 
-def parse_areas(collection, areas):
-    for tokens, child in tokenize(collection.children):
-        while tokens:
-            token = tokens.popleft()
+def search_children(collection, interpret, data, tags=None):
+    for child in collection.children:
+        tags_ = parse(child.name, tags)
+        interpret(child, tags_, data)
 
-            if token == "@ignore":
-                break
 
-            elif token == "@area":
-                area = {"name": tokens.popleft()}
-                parse_area(child, area)
-                areas.append(area)
+def search_objects(collection, interpret, data, tags=None):
+    for child in collection.objects:
+        tags_ = parse(child.name, tags)
+        interpret(child, tags_, data)
 
-            else:
-                pass
 
+def parse(name, tags=None):
+    tokens = tokenize(name)
+
+    if not tags:
+        tags = dict()
+
+    while tokens:
+        token = tokens.popleft()
+
+        if token == "@area":
+            tags["area"] = tokens.popleft()
+
+        elif token == "@hidden":
+            tags["hidden"] = ()
+
+        elif token == "@ignore":
+            tags["ignore"] = ()
+
+        elif token == "@navmesh":
+            tags["navmesh"] = ()
+
+        elif token == "@portal":
+            tags["portal"] = ()
+
+        elif token == "@scenery":
+            tags["scenery"] = ()
+
+    return tags
+
+
+def look_for_areas(child, tags, data):
+    if "ignore" in tags:
+        return
+
+    if "area" in tags:
+        name = tags["area"]
+        area = data.setdefault("areas", dict()).setdefault(name, {"name": name})
+        search_children(child, interpret_area_children, area)
+        search_objects(child, interpret_area_objects, area)
+
+
+def interpret_area_children(child, tags, area):
+    if "ignore" in tags:
+        return
+
+    if "scenery" in tags:
+        tags["scenery"] = ()
+
+    search_children(child, interpret_area_children, area, tags=tags.copy())
+    search_objects(child, interpret_area_objects, area, tags=tags.copy())
+        
+
+def interpret_area_objects(child, tags, area):
+    transform = child.matrix_world
+    if "transform" in tags:
+        transform = tags["transform"] @ transform
+
+    if child.instance_collection:
+        inherited_tags = tags.copy()
+        inherited_tags["transform"] = transform
+        search_children(child.instance_collection, interpret_area_children, area, tags=inherited_tags.copy())
+        search_objects(child.instance_collection, interpret_area_objects, area, tags=inherited_tags.copy())
+        return
+
+    if "ignore" in tags:
+        return
+
+    if "navmesh" in tags:
+        if "navmesh" in area:
+            raise Exception("Multiple navmeshes supplied for `@area {}`".format(area["name"]))
         else:
-            parse_areas(child, areas)
+            area["navmesh"] = child
+
+    if "portal" in tags:
+        area.setdefault("network", list()).append({
+            "name": child.name,
+            "transform": transform,
+            "width": round(child.matrix_world.to_scale().x)
+        })
+
+    if "scenery" in tags:
+        if "hidden" in tags:
+            return
+
+        if child.type == "MESH":
+            filename = os.path.splitext(os.path.basename(bpy.context.blend_data.filepath))[0]
+            if (child.library):
+                filename = os.path.splitext(os.path.basename(child.library.filepath))[0]
+
+            mesh_name = filename + "_" + child.data.name
+
+            area.setdefault("scenery", list()).append({
+                "name": child.name,
+                "transform": transform,
+                "mesh": mesh_name,
+            })
+            area.setdefault("meshes", dict())[mesh_name] = child.data
+
+        elif child.type == "LIGHT":
+            print("LIGHT", "TAGS", tags)
+            if child.data.type == "POINT":
+                area.setdefault("lights", list()).append({
+                    "name": child.name,
+                    "transform": transform,
+                    "color": child.data.color,
+                    "energy": child.data.energy,
+                })
 
 
-def parse_area(collection, area):
-    for tokens, child in tokenize(collection.objects):
-        while tokens:
-            token = tokens.popleft()
-
-            if token == "@ignore":
-                break
-
-            elif token == "@navmesh":
-                if "navmesh" in area:
-                    raise Exception("Multiple navmeshes supplied for `{}`".format(area["name"]))
-                area["navmesh"] = child
-
-            elif token == "@portal":
-                area.setdefault("network", list()).append(child)
-
-            elif token == "@scenery":
-                area.setdefault("scenery", list()).append(child)
-
-            # elif token == "@var":
-                # area.setdefault("vars", dict()).setdefault(tokens.popleft(), list()).append([child])
-
-            else:
-                pass
-
-            
-    for tokens, child in tokenize(collection.children):
-        while tokens:
-            token = tokens.popleft()
-
-            if token == "@ignore":
-                break
-
-            elif token == "@scenery":
-                area.setdefault("scenery", list()).extend(child.objects)
-
-            # elif token == "@var":
-                # area.setdefault("vars", dict()).setdefault(tokens.popleft(), list()).append(list(child.objects))
-
-            else:
-                pass
-
-        else:
-            parse_area(child, area)
-
-
-def parse_export():
-    pass
-
-
-def tokenize(children):
-    for child in children:
-        yield deque(child.name.rsplit('.', 1)[0].split()), child
+def tokenize(string):
+    # print("REGEX", re.sub(r"(@\w*)(?:\.[0-9]{3})", r"\1", string))
+    return deque(re.sub(r"(@\w*)(?:\.[0-9]{3})", r"\1", string).split())
 
 
 def structure_data(data):
     data["meshes"] = dict()
     
-    for area in data["areas"]:
+    for area in data.get("areas", dict()).values():
         print("Structuring {} ...".format(area["name"]), end="")
         area["navmesh"] = structure_navmesh(area["navmesh"])
-        area["network"] = structure_network(area["network"])
-        area["lights"] = list()
-        area["scenery"] = structure_scenery(area.get("scenery", list()), data["meshes"], area["lights"])
         link_navmesh_to_network(area["navmesh"], area["network"])
+        data["meshes"].update(area["meshes"])
         print("Done!")
-
-    structure_meshes(data["meshes"])
 
 
 def structure_navmesh(obj):
@@ -159,62 +207,6 @@ def structure_navmesh(obj):
     return {"vertices": vertices, "triangles": triangles}
 
 
-def structure_network(objs):
-    network = list()
-
-    for obj in objs:
-        network.append({
-            "name": obj.name,
-            "transform": obj.matrix_world,
-            "width": round(obj.matrix_world.to_scale().x)
-        })
-
-    return network
-
-
-def structure_scenery(objs, meshes, lights):
-    scenery = list()
-
-    filename = os.path.splitext(os.path.basename(bpy.context.blend_data.filepath))[0]
-
-    def recurse(transform, children):
-        for child in children:
-            if child.type == "EMPTY":
-                if child.instance_collection:
-                    recurse(transform @ child.matrix_world, child.instance_collection.objects)
-
-            elif child.type == "MESH":
-                fn = filename
-                if (child.library):
-                    fn = os.path.splitext(os.path.basename(child.library.filepath))[0]
-                mesh_name = fn + "_" + child.data.name
-                scenery.append({
-                    "name": child.name,
-                    "transform": transform @ child.matrix_world,
-                    "mesh": mesh_name,
-                })
-                meshes[mesh_name] = child.data
-
-            elif child.type == "LIGHT":
-                if child.data.type == "POINT":
-                    lights.append({
-                        "transform": transform @ child.matrix_world,
-                        "color": child.data.color,
-                        "energy": child.data.energy,
-                    })
-                    
-            recurse(transform, child.children)
-
-    recurse(mathutils.Matrix.Identity(4), objs)
-
-    return scenery
-
-
-def structure_meshes(meshes):
-    return meshes
-    
-
-
 def link_navmesh_to_network(navmesh, network):
     def in_bounds(p, b):
         return abs(p.x) <= b.x and abs(p.y) <= b.y and abs(p.z) <= b.z
@@ -244,6 +236,9 @@ def link_navmesh_to_network(navmesh, network):
                     edge["to"] = PORTAL
                     edge["target"] = portal_i
 
+        if "triangle" not in portal:
+            raise Exception("`{}` contains no edges".format(portal["name"]))
+
 
 def export_data(cooked_dir, data):
     INFO = "# io_kowl v{}.{}.{}\n".format(*VERSION)
@@ -251,7 +246,7 @@ def export_data(cooked_dir, data):
     dirname = os.path.join(cooked_dir, "areas")
     os.makedirs(dirname, exist_ok=True)
 
-    for area in data["areas"]:
+    for area in data.get("areas", dict()).values():
         name = area["name"]
 
         print("Exporting {} ... ".format(name), end="")
@@ -266,7 +261,7 @@ def export_data(cooked_dir, data):
             fw("\n")
 
             fw("# [energy] [color] [position]\n")
-            for light in area["lights"]:
+            for light in area.get("lights", list()):
                 position, _, _ = light["transform"].decompose()
                 fw("{} ".format(light["energy"]))
                 
