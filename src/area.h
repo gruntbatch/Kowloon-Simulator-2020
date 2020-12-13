@@ -7,8 +7,8 @@
 #include "numbers.h"
 
 
-#define MAX_BASE_AREA_COUNT 8
-#define MAX_INSTANCED_AREA_COUNT 32
+#define MAX_BASE_AREA_COUNT 32
+#define MAX_INSTANCED_AREA_COUNT 64
 
 
 extern GLuint64 SCENERY_VERTEX_ARRAY;
