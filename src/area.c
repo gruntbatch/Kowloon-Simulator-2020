@@ -47,6 +47,11 @@ static int is_invalid(Area area) {
 
 
 Area LoadArea(const char* filepath) {
+    if (area_count == MAX_BASE_AREA_COUNT) {
+	Warn("Trying to load too many areas!\n");
+	return (Area) { .id=0 };
+    }
+
     Area id = { .base=area_count++, .instance=MAX_INSTANCED_AREA_COUNT };
 
     {
