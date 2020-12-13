@@ -140,7 +140,6 @@ def interpret_area_objects(child, tags, area):
             area.setdefault("meshes", dict())[mesh_name] = child.data
 
         elif child.type == "LIGHT":
-            print("LIGHT", "TAGS", tags)
             if child.data.type == "POINT":
                 area.setdefault("lights", list()).append({
                     "name": child.name,
