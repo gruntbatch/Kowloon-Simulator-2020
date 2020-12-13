@@ -24,10 +24,10 @@ enum Continue CreateAreaMeshes(void) {
 	/* TODO Improve this */
 	/* Why didn't my solid object work? */
 	/* Y value should be greater, I think */
-	imVertex3f(-1, 0.1, 0);
-	imVertex3f( 1, 0.1, 0);
-	imVertex3f(-1, 0.1, 3.2);
-	imVertex3f( 1, 0.1, 3.2);
+	imVertex3f(-1, 0.2, 0);
+	imVertex3f( 1, 0.2, 0);
+	imVertex3f(-1, 0.2, 3.2);
+	imVertex3f( 1, 0.2, 3.2);
     } portal_mesh = rtEnd();
 
     lit_program = LoadProgram(FromBase("assets/shaders/vertex_lighting.vert"),
