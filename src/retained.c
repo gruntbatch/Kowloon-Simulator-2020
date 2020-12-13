@@ -6,7 +6,7 @@
 
 
 struct String_GLuint64_Pair {
-    char key[32];
+    char key[48];
     GLuint64 value;
 };
 

@@ -107,11 +107,13 @@ def structure_data(data):
     data["meshes"] = dict()
     
     for area in data["areas"]:
+        print("Structuring {} ...".format(area["name"]), end="")
         area["navmesh"] = structure_navmesh(area["navmesh"])
         area["network"] = structure_network(area["network"])
         area["lights"] = list()
         area["scenery"] = structure_scenery(area.get("scenery", list()), data["meshes"], area["lights"])
         link_navmesh_to_network(area["navmesh"], area["network"])
+        print("Done!")
 
     structure_meshes(data["meshes"])
 
@@ -173,6 +175,8 @@ def structure_network(objs):
 def structure_scenery(objs, meshes, lights):
     scenery = list()
 
+    filename = os.path.splitext(os.path.basename(bpy.context.blend_data.filepath))[0]
+
     def recurse(transform, children):
         for child in children:
             if child.type == "EMPTY":
@@ -180,12 +184,16 @@ def structure_scenery(objs, meshes, lights):
                     recurse(transform @ child.matrix_world, child.instance_collection.objects)
 
             elif child.type == "MESH":
+                fn = filename
+                if (child.library):
+                    fn = os.path.splitext(os.path.basename(child.library.filepath))[0]
+                mesh_name = fn + "_" + child.data.name
                 scenery.append({
                     "name": child.name,
                     "transform": transform @ child.matrix_world,
-                    "mesh": child.data.name,
+                    "mesh": mesh_name,
                 })
-                meshes[child.data.name] = child.data
+                meshes[mesh_name] = child.data
 
             elif child.type == "LIGHT":
                 if child.data.type == "POINT":
@@ -313,7 +321,7 @@ def export_data(cooked_dir, data):
                 fw("{},{},{},{} ".format(r.x, r.y, r.z, r.w))
                 fw("{},{},{}\n".format(*s.to_tuple()))
 
-        print("DONE")
+        print("Done!")
 
     dirname = os.path.join(cooked_dir, "meshes")
     os.makedirs(dirname, exist_ok=True)
@@ -321,7 +329,7 @@ def export_data(cooked_dir, data):
     for name, mesh_ in data["meshes"].items():
         print("Exporting {} ... ".format(name), end="")
         mesh.export_mesh(mesh_, os.path.join(dirname, name + ".mesh"))
-        print("DONE")
+        print("Done!")
 
 
 if __name__ == "__main__":
