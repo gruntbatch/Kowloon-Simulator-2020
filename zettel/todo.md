@@ -10,18 +10,18 @@ TODO
   - ~~Render scenes using lights~~
   - ~~Instead of transforming objects, transform the view~~
   - ~~Tune light falloff to reflect Blender~~
-  - Render portals farthest to nearest
   - Make mouse sensitivity a configurable variable
-  - Fisheye lens distortion
-  - Some kind of call back when passing between areas?
   - Add `@glow` support to the export script
-  - Implement a flyaround camera
+  - Fisheye lens distortion
   - Play background music
   - Play ambient sound effects
   - Play dimensional sound effects
-  - Convert the engine to a queued jobs/worker system
   - Convert all python scripts to Python3
+  - Some kind of call back when passing between areas?
   - Get rid of all the `2>nul` nonsense on Windows Makefiles
+  - Implement a flyaround camera
+  - Render portals farthest to nearest
+  - Convert the engine to a queued jobs/worker system
   
 World Generation
 ----------------
