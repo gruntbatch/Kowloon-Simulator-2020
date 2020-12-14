@@ -106,16 +106,17 @@ Area InstanceArea(const Area area) {
 
 void InstanceAreas(int count) {
     count = (MAX_INSTANCED_AREA_COUNT < count) ? MAX_INSTANCED_AREA_COUNT : count;
+    Log("Making %d places using %d bases\n", count, area_count);
 
     int i = 0;
     /* Ensure each area is instanced at least once */
-    for (; i<count && i<area_count; i++) {
-	instance_area(i);
-    }
+    /* for (; i<count && i<area_count; i++) { */
+	/* instance_area(i); */
+    /* } */
 
     /* Randomly instance areas until count is reached */
     for (; i<count; i++) {
-	instance_area(rand() % area_count);
+	instance_area(i % area_count);
     }
 }
 

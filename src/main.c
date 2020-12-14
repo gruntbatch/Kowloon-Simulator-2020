@@ -209,7 +209,7 @@ static enum Continue load_areas_from_index(void) {
 
     rtFillBuffer();
 
-    InstanceAreas(8);
+    InstanceAreas(MAX_INSTANCED_AREA_COUNT);
     LinkInstancedNetworks();
 
     return UP;
