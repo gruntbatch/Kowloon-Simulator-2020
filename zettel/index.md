@@ -1,4 +1,4 @@
-Cyberpunk 1997
-==============
+Kowloon Simulator 2020
+======================
 
-A _Cyberpunk 2077_ demake.
+A cute little walking sim set in the cramped alleys of a dense city.
