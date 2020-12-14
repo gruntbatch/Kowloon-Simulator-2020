@@ -542,48 +542,6 @@ void DrawScenery(Area id) {
 }
 
 
-#if 0
-void DrawSceneryRecursively(Area id, int portal_index, union Matrix4 view, int depth) {
-    struct Network* network = get_network(id);
-    if (depth) {
-	for (int i=0; i<network->portal_count; i++) {
-	    if (i == portal_index) {
-		continue;
-	    }
-
-	    struct Portal* out_portal = &network->portals[i];
-	    struct Network* destination = get_network(out_portal->destination);
-	    struct Portal* in_portal = &destination->portals[out_portal->portal_index];
-
-	    union Matrix4 destination_view = MulM4(out_portal->transform_out, InvertM4(in_portal->transform_in));
-	    destination_view = MulM4(view, destination_view);
-
-	    /* imView(view); */
-	    /* imModel(out_portal->transform_out); */
-	    /* imUseProgram(stencil_program); */
-	    /* rtDrawArrays(GL_TRIANGLE_STRIP, portal_mesh); */
-
-	    DrawSceneryRecursively(out_portal->destination,
-				   out_portal->portal_index,
-				   destination_view,
-				   depth - 1);
-	}
-    }
-    imView(view);
-    imClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    if (0 <= portal_index && portal_index <= network->portal_count) {
-	struct Portal* in_portal = &network->portals[portal_index];
-	imModel(in_portal->transform_in);
-	imUseProgram(stencil_program);
-	imDrawStencil();
-	rtDrawArrays(GL_TRIANGLE_STRIP, portal_mesh);
-    }
-    imDrawColor();
-    DrawScenery(id);
-}
-#endif
-
-
 static void draw_children(Area id, int portal_index, union Matrix4 view, int depth) {
     if (depth) {
 	struct Network* network = get_network(id);
