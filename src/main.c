@@ -12,7 +12,7 @@
 #include "SDL_plus.h"
 #include "stdlib_plus.h"
 
-#define TITLE "Cyberpunk1997"
+#define TITLE "Kowloon_Simulator_2020 v0.1.0"
 
 /* Resolution stuff */
 #define TARGET_INTERNAL_HEIGHT 240
@@ -78,6 +78,7 @@ static enum Continue open_window(void) {
     }
 
     SDL_SetRelativeMouseMode(SDL_TRUE);
+    SDL_ShowCursor(SDL_DISABLE);
 
     return UP;
 }

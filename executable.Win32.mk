@@ -1,7 +1,7 @@
 #
 # Executable
 #
-EXE_FILE = $(BIN_DIR)\Cyberpunk1997.exe
+EXE_FILE = $(BIN_DIR)\Kowloon_Simulator_2020.exe
 
 
 #
