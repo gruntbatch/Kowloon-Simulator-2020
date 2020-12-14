@@ -8,8 +8,8 @@
 
 
 /* TODO Mouse sensitivity should be set via user preferences */
-#define MOUSE_SPEED_X 5.0f
-#define MOUSE_SPEED_Y 5.0f
+#define MOUSE_SPEED_X 6.0f
+#define MOUSE_SPEED_Y 6.0f
 
 
 #define MOVEMENT_SPEED 5.0f
