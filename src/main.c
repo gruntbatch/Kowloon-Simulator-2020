@@ -263,7 +263,7 @@ static enum Continue loop(void) {
 	
 	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	    imProjection(Perspective(90, internal_aspect_ratio(), 0.1, 100.0));
+	    imProjection(Perspective(100, internal_aspect_ratio(), 0.1, 100.0));
 
 	    /* Draw the area */
 	    imModel(Matrix4(1));
