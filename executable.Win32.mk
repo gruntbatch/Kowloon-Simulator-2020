@@ -28,7 +28,6 @@ CFLAGS += /Ilib\SDL2-2.0.12\include
 LDFLAGS += /LIBPATH:lib\glew-2.1.0\lib\Release\Win32
 LDFLAGS += /LIBPATH:lib\SDL2-2.0.12\lib\x86
 LDFLAGS += /SUBSYSTEM:CONSOLE
-LDFLAGS += /DEBUG:FULL
 
 LDLIBS += shell32.lib
 LDLIBS += opengl32.lib
