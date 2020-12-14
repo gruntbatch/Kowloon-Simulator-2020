@@ -112,7 +112,7 @@ static enum Continue create_gl_context(void) {
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
-    glClearColor(0.1, 0.1, 0.1, 1.0);
+    glClearColor(0, 0, 0, 1);
 
     glLogErrors();
 
