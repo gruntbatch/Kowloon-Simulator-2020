@@ -11,3 +11,4 @@ void PollEvents(void);
 SDL_bool HasQuit(void);
 union Vector2 GetLook(void);
 union Vector2 GetMove(void);
+float GetMoveScalar(void);

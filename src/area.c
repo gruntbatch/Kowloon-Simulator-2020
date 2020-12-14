@@ -1,6 +1,7 @@
 #include "area.h"
 
 
+#include "events.h"
 #include "immediate.h"
 #include "logger.h"
 #include "mathematics.h"
@@ -614,7 +615,7 @@ void DrawSceneryRecursively(Area id, int portal_index, union Matrix4 view, int d
 
 #define COLLISION_FORCE 64.0f
 #define FRICTION_FORCE 8.0f
-#define GOAL_FORCE 16.0f
+#define GOAL_FORCE 32.0f
 #define MAX_COLLISION_ITERATION_COUNT 16
 
 
@@ -667,7 +668,7 @@ void MoveAgent(Agent agent_id, union Vector2 goal, float delta_time) {
     union Vector2 force = Vector2(0, 0);
 
     /* Move towards the goal */
-    force = Add2(force, Scale2(Normalize2(goal), GOAL_FORCE));
+    force = Add2(force, Scale2(Normalize2(goal), GOAL_FORCE * GetMoveScalar()));
 
     /* Factor in friction based on the agent's velocity */
     struct Agent* agent = &agents[agent_id];

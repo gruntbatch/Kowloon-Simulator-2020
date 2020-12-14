@@ -6,6 +6,9 @@ static SDL_bool has_quit = SDL_FALSE;
 
 
 static union Vector2 look = { .x=0, .y=0 };
+#define MOVE_LOW 0.4f
+#define MOVE_HIGH 1.0f
+static float move_scalar = MOVE_LOW;
 static union Vector2 move = { .x=0, .y=0 };
 
 
@@ -38,6 +41,9 @@ void PollEvents(void) {
                 case SDLK_d:
                     move.x += 1;
                     break;
+		case SDLK_LSHIFT:
+		    move_scalar = MOVE_HIGH;
+		    break;
 		default:
 		    break;
 		}
@@ -59,6 +65,9 @@ void PollEvents(void) {
 		    break;
 		case SDLK_d:
 		    move.x -= 1;
+		    break;
+		case SDLK_LSHIFT:
+		    move_scalar = MOVE_LOW;
 		    break;
 		default:
 		    break;
@@ -87,4 +96,9 @@ union Vector2 GetLook(void) {
 
 union Vector2 GetMove(void) {
     return move;
+}
+
+
+float GetMoveScalar(void) {
+    return move_scalar;
 }
